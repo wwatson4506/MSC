@@ -37,7 +37,7 @@ public:
 	msController(USBHost &host) { init(); }
 	msController(USBHost *host) { init(); }
 	void msReset();
-	void msGetMaxLun();
+	uint8_t msGetMaxLun();
 	bool available() { delay(0); return deviceAvailable; }
 	bool initialized() { delay(0); return deviceInitialized; }
 	uint8_t WaitMediaReady();
@@ -80,6 +80,7 @@ private:
 	uint8_t maxLUN = 0;
 	volatile bool msOutCompleted = false;
 	volatile bool msInCompleted = false;
+	volatile bool msControlCompleted = false;
 	uint32_t CBWTag = 1;
 	bool deviceAvailable = false;
 	bool deviceInitialized = false;

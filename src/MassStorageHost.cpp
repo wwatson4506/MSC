@@ -75,8 +75,7 @@ uint8_t mscInit(void) {
 	while(!msDrive1.available());
 	msDrive1.msReset();
 	delay(1000);
-//	msResult = msDrive1.msGetMaxLun();
-	msDrive1.msGetMaxLun();
+	msResult = msDrive1.msGetMaxLun();
 	Serial.printf("## mscInit after msgGetMaxLun: %d\n", msResult);
 	delay(150);
 	//-------------------------------------------------------

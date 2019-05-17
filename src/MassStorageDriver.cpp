@@ -44,6 +44,7 @@ void msController::init()
 {
 	contribute_Pipes(mypipes, sizeof(mypipes)/sizeof(Pipe_t));
 	contribute_Transfers(mytransfers, sizeof(mytransfers)/sizeof(Transfer_t));
+	contribute_String_Buffers(mystring_bufs, sizeof(mystring_bufs)/sizeof(strbuf_t));
 	driver_ready_for_device(this);
 }
 /*
@@ -189,6 +190,7 @@ bool msController::claim(Device_t *dev, int type, const uint8_t *descriptors, ui
 
 	msOutCompleted = false;
 	msInCompleted = false;
+	msControlCompleted = false;
 	deviceAvailable = true;
 	return true;
 }
@@ -197,6 +199,7 @@ void msController::control(const Transfer_t *transfer)
 {
 	println("control CallbackIn (msController)");
 	print_hexbytes(report, 8);
+	msControlCompleted = true;
 
 }
 
@@ -264,6 +267,7 @@ void msController::new_dataIn(const Transfer_t *transfer)
 
 	msInCompleted = true; // Last in transaction is completed.
 }
+
 //---------------------------------------------------------------------------
 // Perform Mass Storage Reset
 void msController::msReset() {
@@ -274,11 +278,14 @@ void msController::msReset() {
 
 //---------------------------------------------------------------------------
 // Get MAX LUN
-void msController::msGetMaxLun() {
+uint8_t msController::msGetMaxLun() {
 
-	mk_setup(setup, 0xa1, 0xfe, 0, 1, report[0]);
+	mk_setup(setup, 0xa1, 0xfe, 0, 0, 1);
+	msControlCompleted = false;
 	queue_Control_Transfer(device, &setup, report, this);
-//	return report[0];
+	while (!msControlCompleted) ;
+	maxLUN = report[0];
+	return maxLUN;
 }
 
 uint8_t msController::WaitMediaReady() {

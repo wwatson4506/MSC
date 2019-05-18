@@ -76,20 +76,24 @@ uint8_t mscInit(void) {
 	msDrive1.msReset();
 	delay(1000);
 	msResult = msDrive1.msGetMaxLun();
-	Serial.printf("## mscInit after msgGetMaxLun: %d\n", msResult);
+	//Serial.printf("## mscInit after msgGetMaxLun: %d\n", msResult);
 	delay(150);
 	//-------------------------------------------------------
 //	msDrive1.msStartStopUnit(0);
 	msResult = msDrive1.WaitMediaReady();
 	if(msResult)
 		return msResult;
+//	Serial.printf("## mscInit getDriveSense call\n");
 //	msResult = getDriveSense(&msSense);
 //	hexDump(&msSense,sizeof(msSense));
 
 
 	msResult = msDrive1.msDeviceInquiry(&msInquiry);
+	//Serial.printf("## mscInit msDeviceInquiry call: %x\n", msResult);
 	if(msResult)
 		return msResult;
+	//hexDump(&msInquiry,sizeof(msInquiry));
+
 	//-------------------------------------------------------
 	msResult = msDrive1.msReadDeviceCapacity(&msCapacity);
 	if(msResult)

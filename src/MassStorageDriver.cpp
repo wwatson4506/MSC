@@ -466,7 +466,7 @@ uint8_t msController::msDeviceInquiry(msInquiryResponse_t * const Inquiry)
 		.Flags              = CMDDIRDATAIN,
 		.LUN                = 0,
 		.CommandLength      = 6,
-		.CommandData        = {CMDINQUIRY,0x00,0x00,0x00,0x00,0x00}
+		.CommandData        = {CMDINQUIRY,0x00,0x00,0x00,sizeof(msInquiryResponse_t),0x00}
 	};
 	return msDoCommand(&CommandBlockWrapper, Inquiry);
 }
@@ -496,11 +496,11 @@ uint8_t msController::msReportLUNs(uint8_t *Buffer)
 	{
 		.Signature          = CBWSIGNATURE,
 		.Tag                = ++CBWTag,
-		.TransferLength     = 512,
+		.TransferLength     = MAXLUNS,
 		.Flags              = CMDDIRDATAIN,
 		.LUN                = 0,
-		.CommandLength      = 8,
-		.CommandData        = {CMDREPORTLUNS, 0x00, 0x00, 0x00, 0x00, 0x00, MAXLUNS, 0x00}
+		.CommandLength      = 12,
+		.CommandData        = {CMDREPORTLUNS, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, MAXLUNS, 0x00, 0x00}
 	};
 	return msDoCommand(&CommandBlockWrapper, Buffer);
 }

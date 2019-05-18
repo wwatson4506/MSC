@@ -35,6 +35,8 @@
 
 extern USBHost myusb;
 msController msDrive1(myusb);
+msController msDrive2(myusb);
+msController msDrive3(myusb);
 
 msSCSICapacity_t msCapacity;
 msInquiryResponse_t msInquiry;
@@ -70,30 +72,27 @@ void hexDump(const void *ptr, uint32_t len)
 
 // Initialize Mass Storage Device
 uint8_t mscInit(void) {
-	uint8_t msResult = 0;
+	uint8_t msResult = 1;
 
 	while(!msDrive1.available());
 	msDrive1.msReset();
 	delay(1000);
+	Serial.printf("## mscInit before msgGetMaxLun: %d\n", msResult);
 	msResult = msDrive1.msGetMaxLun();
-	//Serial.printf("## mscInit after msgGetMaxLun: %d\n", msResult);
+	Serial.printf("## mscInit after msgGetMaxLun: %d\n", msResult);
 	delay(150);
 	//-------------------------------------------------------
 //	msDrive1.msStartStopUnit(0);
 	msResult = msDrive1.WaitMediaReady();
 	if(msResult)
 		return msResult;
-//	Serial.printf("## mscInit getDriveSense call\n");
 //	msResult = getDriveSense(&msSense);
 //	hexDump(&msSense,sizeof(msSense));
 
 
 	msResult = msDrive1.msDeviceInquiry(&msInquiry);
-	//Serial.printf("## mscInit msDeviceInquiry call: %x\n", msResult);
 	if(msResult)
 		return msResult;
-	//hexDump(&msInquiry,sizeof(msInquiry));
-
 	//-------------------------------------------------------
 	msResult = msDrive1.msReadDeviceCapacity(&msCapacity);
 	if(msResult)

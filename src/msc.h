@@ -78,10 +78,11 @@ private:
 	setup_t setup;
 	uint8_t report[8];
 	uint8_t maxLUN = 0;
+	uint8_t currentLUN = 0;
 	volatile bool msOutCompleted = false;
 	volatile bool msInCompleted = false;
 	volatile bool msControlCompleted = false;
-	uint32_t CBWTag = 1;
+	uint32_t CBWTag = 0;
 	bool deviceAvailable = false;
 	bool deviceInitialized = false;
 };

@@ -279,7 +279,7 @@ void msController::msReset() {
 //---------------------------------------------------------------------------
 // Get MAX LUN
 uint8_t msController::msGetMaxLun() {
-
+	report[0] = 0;
 	mk_setup(setup, 0xa1, 0xfe, 0, 0, 1);
 	msControlCompleted = false;
 	queue_Control_Transfer(device, &setup, report, this);
@@ -404,7 +404,7 @@ uint8_t msController::msTestReady() {
 		.Tag                = ++CBWTag,
 		.TransferLength     = 0,
 		.Flags              = CMDDIRDATAIN,
-		.LUN                = 0,
+		.LUN                = currentLUN,
 		.CommandLength      = 6,
 		.CommandData        = {CMDTESTUNITREADY, 0x00, 0x00, 0x00, 0x00, 0x00}
 	};
@@ -423,7 +423,7 @@ uint8_t msController::msStartStopUnit(uint8_t mode) {
 		.Tag                = ++CBWTag,
 		.TransferLength     = 0,
 		.Flags              = CMDDIRDATAIN,
-		.LUN                = 0,
+		.LUN                = currentLUN,
 		.CommandLength      = 6,
 		.CommandData        = {CMDSTARTSTOPUNIT, 0x01, 0x00, 0x00, mode, 0x00}
 	};
@@ -444,7 +444,7 @@ uint8_t msController::msReadDeviceCapacity(msSCSICapacity_t * const Capacity)
 		.Tag                = ++CBWTag,
 		.TransferLength     = sizeof(msSCSICapacity_t),
 		.Flags              = CMDDIRDATAIN,
-		.LUN                = 0,
+		.LUN                = currentLUN,
 		.CommandLength      = 10,
 		.CommandData        = {CMDRDCAPACITY10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}
 	};
@@ -464,7 +464,7 @@ uint8_t msController::msDeviceInquiry(msInquiryResponse_t * const Inquiry)
 		.Tag                = ++CBWTag,
 		.TransferLength     = sizeof(msInquiryResponse_t),
 		.Flags              = CMDDIRDATAIN,
-		.LUN                = 0,
+		.LUN                = currentLUN,
 		.CommandLength      = 6,
 		.CommandData        = {CMDINQUIRY,0x00,0x00,0x00,sizeof(msInquiryResponse_t),0x00}
 	};
@@ -481,7 +481,7 @@ uint8_t msController::msRequestSense(msRequestSenseResponse_t * const Sense)
 		.Tag                = ++CBWTag,
 		.TransferLength     = sizeof(msRequestSenseResponse_t),
 		.Flags              = CMDDIRDATAIN,
-		.LUN                = 0,
+		.LUN                = currentLUN,
 		.CommandLength      = 6,
 		.CommandData        = {CMDREQUESTSENSE, 0x00, 0x00, 0x00, sizeof(msRequestSenseResponse_t), 0x00}
 	};
@@ -496,11 +496,11 @@ uint8_t msController::msReportLUNs(uint8_t *Buffer)
 	{
 		.Signature          = CBWSIGNATURE,
 		.Tag                = ++CBWTag,
-		.TransferLength     = MAXLUNS,
+		.TransferLength     = 512,
 		.Flags              = CMDDIRDATAIN,
-		.LUN                = 0,
-		.CommandLength      = 12,
-		.CommandData        = {CMDREPORTLUNS, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, MAXLUNS, 0x00, 0x00}
+		.LUN                = currentLUN,
+		.CommandLength      = 8,
+		.CommandData        = {CMDREPORTLUNS, 0x00, 0x00, 0x00, 0x00, 0x00, MAXLUNS, 0x00}
 	};
 	return msDoCommand(&CommandBlockWrapper, Buffer);
 }
@@ -519,7 +519,7 @@ uint8_t msController::msReadBlocks(
 		.Tag                = ++CBWTag,
 		.TransferLength     = (uint32_t)(Blocks * BlockSize),
 		.Flags              = CMDDIRDATAIN,
-		.LUN                = 0,
+		.LUN                = currentLUN,
 		.CommandLength      = 10,
 		.CommandData        = {CMDRD10, 0x00,
 							  (uint8_t)(BlockAddress >> 24),
@@ -545,7 +545,7 @@ uint8_t msController::msWriteBlocks(
 		.Tag                = ++CBWTag,
 		.TransferLength     = (uint32_t)(Blocks * BlockSize),
 		.Flags              = CMDDIRDATAOUT,
-		.LUN                = 0,
+		.LUN                = currentLUN,
 		.CommandLength      = 10,
 		.CommandData        = {CMDWR10, 0x00,
 		                      (uint8_t)(BlockAddress >> 24),

@@ -78,7 +78,7 @@ uint8_t mscInit(void) {
 	msDrive1.msReset();
 	delay(1000);
 	Serial.printf("## mscInit before msgGetMaxLun: %d\n", msResult);
-	msResult = msDrive1.msGetMaxLun();
+	uint8_t maxLUN = msDrive1.msGetMaxLun();
 	Serial.printf("## mscInit after msgGetMaxLun: %d\n", msResult);
 	delay(150);
 	//-------------------------------------------------------
@@ -89,14 +89,27 @@ uint8_t mscInit(void) {
 //	msResult = getDriveSense(&msSense);
 //	hexDump(&msSense,sizeof(msSense));
 
+	// Test to see if multiple LUN see if we find right data...
+	for (uint8_t currentLUN=0; currentLUN <= maxLUN; currentLUN++) {
+		msDrive1.msCurrentLun(currentLUN);
 
-	msResult = msDrive1.msDeviceInquiry(&msInquiry);
-	if(msResult)
-		return msResult;
+		msResult = msDrive1.msDeviceInquiry(&msInquiry);
+		Serial.printf("## mscInit after msDeviceInquiry LUN(%d): Device Type: %d result:%d\n", currentLUN, msInquiry.DeviceType, msResult);
+		if(msResult)
+			return msResult;
+		hexDump(&msInquiry,sizeof(msInquiry));
+		if (msInquiry.DeviceType == 0)
+			break;
+	} 
+
+
+
 	//-------------------------------------------------------
 	msResult = msDrive1.msReadDeviceCapacity(&msCapacity);
+	Serial.printf("## mscInit after msReadDeviceCapacity: %d\n", msResult);
 	if(msResult)
 		return msResult;
+	hexDump(&msCapacity,sizeof(msCapacity));
 	return msResult;
 }
 

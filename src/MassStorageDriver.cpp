@@ -373,7 +373,7 @@ uint8_t msController::msGetCSW() {
 //---------------------------------------------------------------------------
 // Process Possible Errors
 uint8_t msController::msProcessError(uint8_t msStatus) {
-	uint8_t msResult = 0;
+	//uint8_t msResult = 0;
 	switch(msStatus) {
 		case 0:
 			return MS_CBW_PASS;

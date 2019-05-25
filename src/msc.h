@@ -38,6 +38,8 @@ public:
 	msController(USBHost *host) { init(); }
 	void msReset();
 	uint8_t msGetMaxLun();
+	void msCurrentLun(uint8_t lun) {currentLUN = lun;}
+	uint8_t msCurrentLun() {return currentLUN;}
 	bool available() { delay(0); return deviceAvailable; }
 	bool initialized() { delay(0); return deviceInitialized; }
 	uint8_t WaitMediaReady();

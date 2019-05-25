@@ -30,6 +30,24 @@
 #include "msc.h"
 #include "MassStorage.h"
 
+//#define DEBUG_MSC
+//#define DEBUG_MSC_VERBOSE
+
+#ifndef DEBUG_MSC
+#undef DEBUG_MSC_VERBOSE
+void inline DBGPrintf(...) {};
+#else
+#define DBGPrintf Serial.printf
+#endif
+
+#ifndef DEBUG_MSC_VERBOSE
+void inline VDBGPrintf(...) {};
+void inline DBGHexDump(const void *ptr, uint32_t len) {};
+#else
+#define VDBGPrintf Serial.printf
+#define DBGHexDump hexDump
+#endif
+
 //#define print   USBHost::print_
 //#define println USBHost::println_
 
@@ -77,9 +95,9 @@ uint8_t mscInit(void) {
 	while(!msDrive1.available());
 	msDrive1.msReset();
 	delay(1000);
-	Serial.printf("## mscInit before msgGetMaxLun: %d\n", msResult);
-	msResult = msDrive1.msGetMaxLun();
-	Serial.printf("## mscInit after msgGetMaxLun: %d\n", msResult);
+	DBGPrintf("## mscInit before msgGetMaxLun: %d\n", msResult);
+	uint8_t maxLUN = msDrive1.msGetMaxLun();
+	DBGPrintf("## mscInit after msgGetMaxLun: %d\n", msResult);
 	delay(150);
 	//-------------------------------------------------------
 //	msDrive1.msStartStopUnit(0);
@@ -87,16 +105,32 @@ uint8_t mscInit(void) {
 	if(msResult)
 		return msResult;
 //	msResult = getDriveSense(&msSense);
-//	hexDump(&msSense,sizeof(msSense));
+//	DBGHexDump(&msSense,sizeof(msSense));
+
+	// Test to see if multiple LUN see if we find right data...
+	for (uint8_t currentLUN=0; currentLUN <= maxLUN; currentLUN++) {
+		msDrive1.msCurrentLun(currentLUN);
+
+		msResult = msDrive1.msDeviceInquiry(&msInquiry);
+		DBGPrintf("## mscInit after msDeviceInquiry LUN(%d): Device Type: %d result:%d\n", currentLUN, msInquiry.DeviceType, msResult);
+		if(msResult)
+			return msResult;
+		DBGHexDump(&msInquiry,sizeof(msInquiry));
+		if (msInquiry.DeviceType == 0)
+			break;
+	} 
+
+	// if device is not like hard disk, probably won't work! example CDROM... 
+	if (msInquiry.DeviceType != 0)
+		return MS_CSW_TAG_ERROR;
 
 
-	msResult = msDrive1.msDeviceInquiry(&msInquiry);
-	if(msResult)
-		return msResult;
 	//-------------------------------------------------------
 	msResult = msDrive1.msReadDeviceCapacity(&msCapacity);
+	DBGPrintf("## mscInit after msReadDeviceCapacity: %d\n", msResult);
 	if(msResult)
 		return msResult;
+	DBGHexDump(&msCapacity,sizeof(msCapacity));
 	return msResult;
 }
 

@@ -47,7 +47,6 @@ void msController::init()
 	contribute_String_Buffers(mystring_bufs, sizeof(mystring_bufs)/sizeof(strbuf_t));
 	driver_ready_for_device(this);
 }
-/*
 bool msController::claim(Device_t *dev, int type, const uint8_t *descriptors, uint32_t len)
 {
 	println("msController claim this=", (uint32_t)this, HEX);
@@ -64,60 +63,6 @@ bool msController::claim(Device_t *dev, int type, const uint8_t *descriptors, ui
 	if (descriptors[6] != 6) return false; // bInterfaceSubClass, 6 = SCSI transparent command set (SCSI Standards)
 	if (descriptors[7] != 80) return false; // bInterfaceProtocol, 80 = BULK-ONLY TRANSPORT
 
-	if (descriptors[10] != 5 || descriptors[17] != 5) return false; // Must have bulk-in and bulk-out endpoints
-
-	uint8_t endpointType = (descriptors[12] | descriptors[19]) & 0x03; 
-	println("endpointType = ",endpointType);
-	endpointIn = descriptors[11]; // bulk-in descriptor 1 81h
-	endpointOut = descriptors[18]; // bulk-out descriptor 2 02h
-
-	if ((endpointIn & 0xF0) != 0x80) return false; // must be IN direction
-	if ((endpointOut & 0xF0) != 0x00) return false; // must be OUT direction
-	println("numendpoint=", numendpoint, HEX);
-	println("endpointIn=", endpointIn, HEX);
-	println("endpointOut=", endpointOut, HEX);
-
-	uint32_t sizeIn = descriptors[13] | (descriptors[14] << 8);
-	println("packet size in (msController) = ", sizeIn);
-
-	uint32_t sizeOut = descriptors[20] | (descriptors[21] << 8);
-	println("packet size out (msController) = ", sizeOut);
-	packetSizeIn = sizeIn;	
-	packetSizeOut = sizeOut;	
-
-	uint32_t intervalIn = descriptors[15];
-	uint32_t intervalOut = descriptors[22];
-
-	println("polling intervalIn = ", intervalIn);
-	println("polling intervalOut = ", intervalOut);
-	datapipeIn = new_Pipe(dev, 2, endpointIn, 1, packetSizeIn, intervalIn);
-	datapipeOut = new_Pipe(dev, 2, endpointOut, 0, packetSizeOut, intervalOut);
-
-	datapipeIn->callback_function = callbackIn;
-	datapipeOut->callback_function = callbackOut;
-
-	msOutCompleted = false;
-	msInCompleted = false;
-	deviceAvailable = true;
-	return true;
-}
-*/
-bool msController::claim(Device_t *dev, int type, const uint8_t *descriptors, uint32_t len)
-{
-	println("msController claim this=", (uint32_t)this, HEX);
-	// only claim at interface level
-
-	if (type != 1) return false;
-	if (len < 9+7+7) return false; // Interface descriptor + 2 endpoint decriptors 
-
-	print_hexbytes(descriptors, len);
-
-	uint32_t numendpoint = descriptors[4];
-	if (numendpoint < 1) return false; 
-	if (descriptors[5] != 8) return false; // bInterfaceClass, 8 = MASS Storage class
-	if (descriptors[6] != 6) return false; // bInterfaceSubClass, 6 = SCSI transparent command set (SCSI Standards)
-	if (descriptors[7] != 80) return false; // bInterfaceProtocol, 80 = BULK-ONLY TRANSPORT
-#if 1
 	uint8_t desc_index = 9;
 	uint8_t in_index = 0xff, out_index = 0xff;
 
@@ -154,37 +99,6 @@ bool msController::claim(Device_t *dev, int type, const uint8_t *descriptors, ui
 	println("polling intervalOut = ", intervalOut);
 	datapipeIn = new_Pipe(dev, 2, endpointIn, 1, packetSizeIn, intervalIn);
 	datapipeOut = new_Pipe(dev, 2, endpointOut, 0, packetSizeOut, intervalOut);
-#else	
-
-	if (descriptors[10] != 5 || descriptors[17] != 5) return false; // Must have bulk-in and bulk-out endpoints
-
-	uint8_t endpointType = (descriptors[12] | descriptors[19]) & 0x03; 
-	println("endpointType = ",endpointType);
-	endpointIn = descriptors[11]; // bulk-in descriptor 1 81h
-	endpointOut = descriptors[18]; // bulk-out descriptor 2 02h
-
-	if ((endpointIn & 0xF0) != 0x80) return false; // must be IN direction
-	if ((endpointOut & 0xF0) != 0x00) return false; // must be OUT direction
-	println("numendpoint=", numendpoint, HEX);
-	println("endpointIn=", endpointIn, HEX);
-	println("endpointOut=", endpointOut, HEX);
-
-	uint32_t sizeIn = descriptors[13] | (descriptors[14] << 8);
-	println("packet size in (msController) = ", sizeIn);
-
-	uint32_t sizeOut = descriptors[20] | (descriptors[21] << 8);
-	println("packet size out (msController) = ", sizeOut);
-	packetSizeIn = sizeIn;	
-	packetSizeOut = sizeOut;	
-
-	uint32_t intervalIn = descriptors[15];
-	uint32_t intervalOut = descriptors[22];
-
-	println("polling intervalIn = ", intervalIn);
-	println("polling intervalOut = ", intervalOut);
-	datapipeIn = new_Pipe(dev, 2, endpointIn, 1, packetSizeIn, intervalIn);
-	datapipeOut = new_Pipe(dev, 2, endpointOut, 0, packetSizeOut, intervalOut);
-#endif
 	datapipeIn->callback_function = callbackIn;
 	datapipeOut->callback_function = callbackOut;
 
@@ -230,20 +144,6 @@ void msController::disconnect()
 	println("Device Disconnected...");
 }
 
-/*
-void msController::new_dataOut(const Transfer_t *transfer)
-{
-	println("msController dataOut (static)");
-	msOutCompleted = true; // Last out transaction is completed.
-}
-
-void msController::new_dataIn(const Transfer_t *transfer)
-{
-	println("msController dataIn (static)");
-	msInCompleted = true; // Last in transaction is completed.
-}
-*/
-
 void msController::new_dataOut(const Transfer_t *transfer)
 {
 	uint32_t len = transfer->length - ((transfer->qtd.token >> 16) & 0x7FFF);
@@ -263,8 +163,6 @@ void msController::new_dataIn(const Transfer_t *transfer)
 		else if (l == CSWSIGNATURE) println("** CSWSIGNATURE");
 		else println("** ????");
 	}
-
-
 	msInCompleted = true; // Last in transaction is completed.
 }
 
@@ -284,6 +182,7 @@ uint8_t msController::msGetMaxLun() {
 	msControlCompleted = false;
 	queue_Control_Transfer(device, &setup, report, this);
 	while (!msControlCompleted) ;
+	
 	maxLUN = report[0];
 	return maxLUN;
 }
@@ -297,58 +196,28 @@ uint8_t msController::WaitMediaReady() {
 	return msResult;
 }
 
-/*
-//---------------------------------------------------------------------------
-// Send SCSI Command
-uint8_t msController::msDoCommand(msCommandBlockWrapper_t *CBW,	void *buffer)
-{
-	if(CBWTag == 0xFFFFFFFF)
-		CBWTag = 1;
-	if((CBW->Flags == CMDDIRDATAIN)) { // Data from device
-		queue_Data_Transfer(datapipeOut, CBW, sizeof(msCommandBlockWrapper_t), this);
-		queue_Data_Transfer(datapipeIn, buffer, CBW->TransferLength, this);
-		while(!msOutCompleted);  // Wait for out transaction to complete.
-		while(!msInCompleted);  // Wait for in transaction to complete.
-	} else { // Data to device
-		queue_Data_Transfer(datapipeOut, CBW, sizeof(msCommandBlockWrapper_t), this);
-		while(!msOutCompleted);  // Wait for out transaction to complete.
-		queue_Data_Transfer(datapipeOut, buffer, CBW->TransferLength, this);
-		while(!msOutCompleted);  // Wait for second out transaction to complete.
-	}
-	// Reset completion flags. 
- 	msOutCompleted = false;
-	msInCompleted = false;
-	return msGetCSW();  // Get status of last transaction
-}
-*/
-
 //---------------------------------------------------------------------------
 // Send SCSI Command
 uint8_t msController::msDoCommand(msCommandBlockWrapper_t *CBW,	void *buffer)
 {
 	uint8_t CSWResult = 0;
-
 	if(CBWTag == 0xFFFFFFFF)
 		CBWTag = 1;
+
+	queue_Data_Transfer(datapipeOut, CBW, sizeof(msCommandBlockWrapper_t), this);
+	while(!msOutCompleted);  // Wait for out transaction to complete.
+	msOutCompleted = false;
+
 	if((CBW->Flags == CMDDIRDATAIN)) { // Data from device
-		queue_Data_Transfer(datapipeOut, CBW, sizeof(msCommandBlockWrapper_t), this);
-		while(!msOutCompleted);  // Wait for out transaction to complete.
-		msOutCompleted = false;
 		queue_Data_Transfer(datapipeIn, buffer, CBW->TransferLength, this);
 		while(!msInCompleted);  // Wait for in transaction to complete.
 		msInCompleted = false;
-		if((CSWResult = msGetCSW()) != 0)
-			return CSWResult;
 	} else { // Data to device
-		queue_Data_Transfer(datapipeOut, CBW, sizeof(msCommandBlockWrapper_t), this);
-		while(!msOutCompleted);  // Wait for out transaction to complete.
-		msOutCompleted = false;
 		queue_Data_Transfer(datapipeOut, buffer, CBW->TransferLength, this);
-		while(!msOutCompleted);  // Wait for second out transaction to complete.
+		while(!msOutCompleted);
 		msOutCompleted = false;
-		if((CSWResult = msGetCSW()) != 0)
-			return CSWResult;
 	}
+	CSWResult = msGetCSW();
 	return CSWResult;  // Return CSW status
 }
 
@@ -366,23 +235,8 @@ uint8_t msController::msGetCSW() {
 	queue_Data_Transfer(datapipeIn, &StatusBlockWrapper, sizeof(StatusBlockWrapper), this);
 	while(!msInCompleted);
 	msInCompleted = false;
-	CSWResult = msCheckCSW(&StatusBlockWrapper);
+	CSWResult = msProcessError(msCheckCSW(&StatusBlockWrapper));
 	return CSWResult;
-}
-
-//---------------------------------------------------------------------------
-// Process Possible Errors
-uint8_t msController::msProcessError(uint8_t msStatus) {
-	//uint8_t msResult = 0;
-	switch(msStatus) {
-		case 0:
-			return MS_CBW_PASS;
-		case 1:
-			return MS_CBW_FAIL;
-		default:
-			return msStatus;
-	}
-			
 }
 
 //---------------------------------------------------------------------------
@@ -393,6 +247,55 @@ uint8_t msController::msCheckCSW(msCommandStatusWrapper_t *CSW) {
 	if(CSW->Tag != CBWTag) return MS_CSW_TAG_ERROR; // Tag mismatch error
 	if(CSW->Status != 0) return CSW->Status; // Actual status from last transaction 
 	return MS_CBW_PASS; // Command transaction success (0)
+}
+
+// Proccess Possible SCSI errors
+uint8_t msController::msProcessError(uint8_t msStatus) {
+	uint8_t msResult = 0;
+	
+	switch(msStatus) {
+		case MS_CBW_PASS:
+			return MS_CBW_PASS;
+		case MS_CBW_PHASE_ERROR:
+			Serial.printf("SCSI Phase Error: %d\n",msStatus);
+			return MS_SCSI_ERROR;
+		case MS_CSW_TAG_ERROR:
+			Serial.printf("CSW Tag Error: %d\n",MS_CSW_TAG_ERROR);
+			return MS_CSW_TAG_ERROR;
+		case MS_CSW_SIG_ERROR:
+			Serial.printf("CSW Signature Error: %d\n",MS_CSW_SIG_ERROR);
+			return MS_CSW_SIG_ERROR;
+		case MS_CBW_FAIL:
+			msResult = getDriveSense(sense);
+			switch(sense->SenseKey) {
+				case MSUNITATTENTION:
+					switch(sense->AdditionalSenseCode) {
+						case MSMEDIACHANGED:
+							return MSMEDIACHANGEDERR;
+						default:
+							return MSUNITNOTREADY;
+					}
+				case MSNOTREADY:
+					switch(sense->AdditionalSenseCode) {
+						case MSMEDIUMNOTPRESENT:
+							return MSNOMEDIAERR;
+						default:
+							return MSUNITNOTREADY;
+					}
+				case MSILLEGALREQUEST:
+					switch(sense->AdditionalSenseCode) {
+						case MSLBAOUTOFRANGE:
+							return MSBADLBAERR;
+						default:
+							return MSCMDERR;
+					}
+				default:
+					return MS_SCSI_ERROR;
+			}
+		default:
+			Serial.printf("SCSI Error: %d\n",msStatus);
+			return msStatus;
+	}
 }
 
 //---------------------------------------------------------------------------
@@ -509,12 +412,15 @@ uint8_t msController::msReportLUNs(uint8_t *Buffer)
 // Read Sectors (Multi Sector Capable)
 uint8_t msController::msReadBlocks(
 									const uint32_t BlockAddress,
-									const uint8_t Blocks,
+									const uint16_t Blocks,
 									const uint16_t BlockSize,
 									void * sectorBuffer)
 	{
+	uint8_t BlockHi = (Blocks >> 8) & 0xFF;
+	uint8_t BlockLo = Blocks & 0xFF;
 	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
 	{
+	
 		.Signature          = CBWSIGNATURE,
 		.Tag                = ++CBWTag,
 		.TransferLength     = (uint32_t)(Blocks * BlockSize),
@@ -526,7 +432,7 @@ uint8_t msController::msReadBlocks(
 							  (uint8_t)(BlockAddress >> 16),
 							  (uint8_t)(BlockAddress >> 8),
 							  (uint8_t)(BlockAddress & 0xFF),
-							   0x00, 0x00, Blocks, 0x00}
+							   0x00, BlockHi, BlockLo, 0x00}
 	};
 	return msDoCommand(&CommandBlockWrapper, sectorBuffer);
 }
@@ -535,10 +441,12 @@ uint8_t msController::msReadBlocks(
 // Write Sectors (Multi Sector Capable)
 uint8_t msController::msWriteBlocks(
                                   const uint32_t BlockAddress,
-                                  const uint8_t Blocks,
+                                  const uint16_t Blocks,
                                   const uint16_t BlockSize,
 								  void * sectorBuffer)
 	{
+	uint8_t BlockHi = (Blocks >> 8) & 0xFF;
+	uint8_t BlockLo = Blocks & 0xFF;
 	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
 	{
 		.Signature          = CBWSIGNATURE,
@@ -552,7 +460,7 @@ uint8_t msController::msWriteBlocks(
 							  (uint8_t)(BlockAddress >> 16),
 							  (uint8_t)(BlockAddress >> 8),
 							  (uint8_t)(BlockAddress & 0xFF),
-							  0x00, 0x00, Blocks, 0x00}
+							  0x00, BlockHi, BlockLo, 0x00}
 	};
 	return msDoCommand(&CommandBlockWrapper, sectorBuffer);
 }

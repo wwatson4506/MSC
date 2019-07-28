@@ -37,14 +37,14 @@
 #undef DEBUG_MSC_VERBOSE
 void inline DBGPrintf(...) {};
 #else
-#define DBGPrintf Serial.printf
+#define DBGPrintf Serial1.printf
 #endif
 
 #ifndef DEBUG_MSC_VERBOSE
 void inline VDBGPrintf(...) {};
 void inline DBGHexDump(const void *ptr, uint32_t len) {};
 #else
-#define VDBGPrintf Serial.printf
+#define VDBGPrintf Serial1.printf
 #define DBGHexDump hexDump
 #endif
 
@@ -60,59 +60,56 @@ msSCSICapacity_t msCapacity;
 msInquiryResponse_t msInquiry;
 msRequestSenseResponse_t msSense;
 
-// A small hex dump funcion
+// A small hex dump function
 void hexDump(const void *ptr, uint32_t len)
 {
   uint32_t  i = 0, j = 0;
   uint8_t   c=0;
   const uint8_t *p = (const uint8_t *)ptr;
 
-  Serial.printf("BYTE      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
-  Serial.printf("---------------------------------------------------------\n");
+  Serial1.printf("BYTE      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n\r");
+  Serial1.printf("---------------------------------------------------------\n\r");
   for(i = 0; i <= (len-1); i+=16) {
-   Serial.printf("%4.4x      ",i);
+   Serial1.printf("%4.4x      ",i);
    for(j = 0; j < 16; j++) {
       c = p[i+j];
-      Serial.printf("%2.2x ",c);
+      Serial1.printf("%2.2x ",c);
     }
-    Serial.printf("  ");
+    Serial1.printf("  ");
     for(j = 0; j < 16; j++) {
       c = p[i+j];
       if(c > 31 && c < 127)
-        Serial.printf("%c",c);
+        Serial1.printf("%c",c);
       else
-        Serial.printf(".");
+        Serial1.printf(".");
     }
-    Serial.println();
+    Serial1.println();
   }
 
 }
 
 // Initialize Mass Storage Device
 uint8_t mscInit(void) {
-	uint8_t msResult = 1;
+	uint8_t msResult = 0;
 
 	while(!msDrive1.available());
 	msDrive1.msReset();
 	delay(1000);
-	DBGPrintf("## mscInit before msgGetMaxLun: %d\n", msResult);
+	DBGPrintf("## mscInit before msgGetMaxLun: %d\n\r", msResult);
 	uint8_t maxLUN = msDrive1.msGetMaxLun();
-	DBGPrintf("## mscInit after msgGetMaxLun: %d\n", msResult);
+	DBGPrintf("## mscInit after msgGetMaxLun: %d\n\r", msResult);
 	delay(150);
 	//-------------------------------------------------------
-//	msDrive1.msStartStopUnit(0);
+	msResult = msDrive1.msStartStopUnit(1);
 	msResult = msDrive1.WaitMediaReady();
 	if(msResult)
 		return msResult;
-//	msResult = getDriveSense(&msSense);
-//	DBGHexDump(&msSense,sizeof(msSense));
-
 	// Test to see if multiple LUN see if we find right data...
 	for (uint8_t currentLUN=0; currentLUN <= maxLUN; currentLUN++) {
 		msDrive1.msCurrentLun(currentLUN);
 
 		msResult = msDrive1.msDeviceInquiry(&msInquiry);
-		DBGPrintf("## mscInit after msDeviceInquiry LUN(%d): Device Type: %d result:%d\n", currentLUN, msInquiry.DeviceType, msResult);
+		DBGPrintf("## mscInit after msDeviceInquiry LUN(%d): Device Type: %d result:%d\n\r", currentLUN, msInquiry.DeviceType, msResult);
 		if(msResult)
 			return msResult;
 		DBGHexDump(&msInquiry,sizeof(msInquiry));
@@ -127,7 +124,7 @@ uint8_t mscInit(void) {
 
 	//-------------------------------------------------------
 	msResult = msDrive1.msReadDeviceCapacity(&msCapacity);
-	DBGPrintf("## mscInit after msReadDeviceCapacity: %d\n", msResult);
+	DBGPrintf("## mscInit after msReadDeviceCapacity: %d\n\r", msResult);
 	if(msResult)
 		return msResult;
 	DBGHexDump(&msCapacity,sizeof(msCapacity));
@@ -153,14 +150,14 @@ uint8_t WaitDriveReady(void) {
 }
 
 // Read Sectors
-uint8_t readSectors(void *sectorBuffer,uint32_t BlockAddress, uint8_t Blocks) {
+uint8_t readSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks) {
 	uint8_t msResult = 0;
-	msResult = msDrive1.msReadBlocks(BlockAddress,Blocks,512,sectorBuffer);
+	msResult = msDrive1.msReadBlocks(BlockAddress,Blocks,(uint16_t)512,sectorBuffer);
 	return msResult;
 }
 
 // Write Sectors
-uint8_t writeSectors(void *sectorBuffer,uint32_t BlockAddress, uint8_t Blocks) {
+uint8_t writeSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks) {
 	uint8_t msResult = 0;
 	msResult = msDrive1.msWriteBlocks(BlockAddress,Blocks,(uint16_t)512,sectorBuffer);
 	return msResult;
@@ -172,6 +169,7 @@ uint8_t getDriveSense(msRequestSenseResponse_t *mscSense) {
 	msResult = msDrive1.msRequestSense(mscSense);
 	return msResult;
 }
+
 
 // Get drive capacity (Sector size and count)
 msSCSICapacity_t *getDriveCapacity(void) {

@@ -46,17 +46,25 @@
 #define	MS_CBW_PASS 		0
 #define	MS_CBW_FAIL  		1
 #define	MS_CBW_PHASE_ERROR	2
-#define MS_CSW_TAG_ERROR	3
-#define MS_CSW_SIG_ERROR	4
+#define MS_CSW_TAG_ERROR	253
+#define MS_CSW_SIG_ERROR	254
+#define MS_SCSI_ERROR		255
 
 // SCSI Sense Key codes
-#define MSNOTREADY		0x02
+#define MSNOTREADY			0x02
 #define MSMEDIUMERROR		0x03
-#define MSILLEGALREQUEST		0x05
+#define MSILLEGALREQUEST	0x05
 #define MSUNITATTENTION		0x06
-#define MSLBAOUTOFRANGE       0x21
-#define MSMEDIACHANGED          0x28
-#define MSMEDIUMNOTPRESENT     0x3A
+#define MSLBAOUTOFRANGE     0x21
+#define MSMEDIACHANGED      0x28
+#define MSMEDIUMNOTPRESENT  0x3A
+
+// SCSI Error Codes
+#define MSMEDIACHANGEDERR	0x2A
+#define MSNOMEDIAERR		0x28
+#define MSUNITNOTREADY		0x23
+#define MSBADLBAERR			0x29
+#define MSCMDERR			0x26
 
 #define MAXLUNS				16
 
@@ -133,6 +141,7 @@ typedef struct
 	uint8_t  AdditionalSenseQualifier;
 	uint8_t  FieldReplaceableUnitCode;
 	uint8_t  SenseKeySpecific[3];
+	uint8_t  padding[234];
 }  __attribute__((packed)) msRequestSenseResponse_t;
 
 // C prototypes
@@ -141,11 +150,11 @@ extern "C" {
 #endif
 void hexDump(const void *ptr, uint32_t len);
 uint8_t mscInit(void);
-bool deviceAvailable(void);
-bool deviceInitialized(void);
+boolean deviceAvailable(void);
+boolean deviceInitialized(void);
 uint8_t	WaitDriveReady(void);
-uint8_t readSectors(void *sectorBuffer,uint32_t BlockAddress, uint8_t Blocks);
-uint8_t writeSectors(void *sectorBuffer,uint32_t BlockAddress, uint8_t Blocks);
+uint8_t readSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks);
+uint8_t writeSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks);
 msSCSICapacity_t *getDriveCapacity(void);
 msInquiryResponse_t *getDriveInquiry(void);
 uint8_t getDriveSense(msRequestSenseResponse_t *mscSense);
@@ -156,11 +165,11 @@ uint8_t getDriveSense(msRequestSenseResponse_t *mscSense);
 // C++ prototypes
 void hexDump(const void *ptr, uint32_t len);
 uint8_t mscInit(void);
-bool deviceAvailable(void);
-bool deviceInitialized(void);
+boolean deviceAvailable(void);
+boolean deviceInitialized(void);
 uint8_t	WaitDriveReady(void);
-uint8_t readSectors(void *sectorBuffer,uint32_t BlockAddress, uint8_t Blocks);
-uint8_t writeSectors(void *sectorBuffer,uint32_t BlockAddress, uint8_t Blocks);
+uint8_t readSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks);
+uint8_t writeSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks);
 msSCSICapacity_t *getDriveCapacity(void);
 msInquiryResponse_t *getDriveInquiry(void);
 uint8_t getDriveSense(msRequestSenseResponse_t *mscSense);

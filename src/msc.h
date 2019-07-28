@@ -50,9 +50,9 @@ public:
 	uint8_t msDeviceInquiry(msInquiryResponse_t * const Inquiry);
 	uint8_t msRequestSense(msRequestSenseResponse_t * const Sense);
 	uint8_t msRequestSense(void *Sense);
-	uint8_t msReadBlocks(const uint32_t BlockAddress, const uint8_t Blocks,
+	uint8_t msReadBlocks(const uint32_t BlockAddress, const uint16_t Blocks,
 						 const uint16_t BlockSize, void * sectorBuffer);
-	uint8_t msWriteBlocks(const uint32_t BlockAddress, const uint8_t Blocks,
+	uint8_t msWriteBlocks(const uint32_t BlockAddress, const uint16_t Blocks,
                         const uint16_t BlockSize,	void * sectorBuffer);
 protected:
 	virtual bool claim(Device_t *device, int type, const uint8_t *descriptors, uint32_t len);

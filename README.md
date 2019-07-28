@@ -14,3 +14,5 @@ https://forum.pjrc.com/threads/54711-Teensy-4-0-First-Beta-Test
 WMXZ uSDFS found here: https://github.com/WMXZ-EU/uSDFS
 
 PJRC forum thread for MSC: https://forum.pjrc.com/threads/55821-USBHost_t36-USB-Mass-Storage-Driver-Experiments
+
+Updated 07/28/19: Added more complete error processing using sense codes.

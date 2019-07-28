@@ -150,8 +150,8 @@ extern "C" {
 #endif
 void hexDump(const void *ptr, uint32_t len);
 uint8_t mscInit(void);
-boolean deviceAvailable(void);
-boolean deviceInitialized(void);
+bool deviceAvailable(void);
+bool deviceInitialized(void);
 uint8_t	WaitDriveReady(void);
 uint8_t readSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks);
 uint8_t writeSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks);
@@ -165,8 +165,8 @@ uint8_t getDriveSense(msRequestSenseResponse_t *mscSense);
 // C++ prototypes
 void hexDump(const void *ptr, uint32_t len);
 uint8_t mscInit(void);
-boolean deviceAvailable(void);
-boolean deviceInitialized(void);
+bool deviceAvailable(void);
+bool deviceInitialized(void);
 uint8_t	WaitDriveReady(void);
 uint8_t readSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks);
 uint8_t writeSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks);

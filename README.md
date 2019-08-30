@@ -1,5 +1,5 @@
 # MSC
-Mass Storage Controller for Teensy T3.6
+Mass Storage Controller for Teensy T3.6 and T4.0
 
 This is a USB Mass Storage driver based on PJRC's USBHost_t36 library.
 

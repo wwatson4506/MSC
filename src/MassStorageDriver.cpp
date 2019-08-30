@@ -32,8 +32,6 @@
 #define print   USBHost::print_
 #define println USBHost::println_
 
-msRequestSenseResponse_t *sense;
-
 // Big Endian/Little Endian
 #define swap32(x) ((x >> 24) & 0xff) | \
 				  ((x << 8) & 0xff0000) | \
@@ -189,15 +187,16 @@ uint8_t msController::msGetMaxLun() {
 
 uint8_t msController::WaitMediaReady() {
 	uint8_t msResult = 0;
-//	do {
+	do {
 		msResult = msTestReady();
-//	} while(msResult);
+	} while(msResult);
 // TODO: Process a Timeout
 	return msResult;
 }
 
 //---------------------------------------------------------------------------
 // Send SCSI Command
+
 uint8_t msController::msDoCommand(msCommandBlockWrapper_t *CBW,	void *buffer)
 {
 	uint8_t CSWResult = 0;
@@ -235,7 +234,7 @@ uint8_t msController::msGetCSW() {
 	queue_Data_Transfer(datapipeIn, &StatusBlockWrapper, sizeof(StatusBlockWrapper), this);
 	while(!msInCompleted);
 	msInCompleted = false;
-	CSWResult = msProcessError(msCheckCSW(&StatusBlockWrapper));
+	CSWResult = msCheckCSW(&StatusBlockWrapper);
 	return CSWResult;
 }
 
@@ -246,57 +245,8 @@ uint8_t msController::msCheckCSW(msCommandStatusWrapper_t *CSW) {
 	if(CSW->Signature != CSWSIGNATURE) return MS_CSW_SIG_ERROR; // Signature error
 	if(CSW->Tag != CBWTag) return MS_CSW_TAG_ERROR; // Tag mismatch error
 	if(CSW->Status != 0) return CSW->Status; // Actual status from last transaction 
-	return MS_CBW_PASS; // Command transaction success (0)
 }
 
-// Proccess Possible SCSI errors
-uint8_t msController::msProcessError(uint8_t msStatus) {
-	uint8_t msResult = 0;
-	
-	switch(msStatus) {
-		case MS_CBW_PASS:
-			return MS_CBW_PASS;
-		case MS_CBW_PHASE_ERROR:
-			Serial.printf("SCSI Phase Error: %d\n",msStatus);
-			return MS_SCSI_ERROR;
-		case MS_CSW_TAG_ERROR:
-			Serial.printf("CSW Tag Error: %d\n",MS_CSW_TAG_ERROR);
-			return MS_CSW_TAG_ERROR;
-		case MS_CSW_SIG_ERROR:
-			Serial.printf("CSW Signature Error: %d\n",MS_CSW_SIG_ERROR);
-			return MS_CSW_SIG_ERROR;
-		case MS_CBW_FAIL:
-			msResult = getDriveSense(sense);
-			switch(sense->SenseKey) {
-				case MSUNITATTENTION:
-					switch(sense->AdditionalSenseCode) {
-						case MSMEDIACHANGED:
-							return MSMEDIACHANGEDERR;
-						default:
-							return MSUNITNOTREADY;
-					}
-				case MSNOTREADY:
-					switch(sense->AdditionalSenseCode) {
-						case MSMEDIUMNOTPRESENT:
-							return MSNOMEDIAERR;
-						default:
-							return MSUNITNOTREADY;
-					}
-				case MSILLEGALREQUEST:
-					switch(sense->AdditionalSenseCode) {
-						case MSLBAOUTOFRANGE:
-							return MSBADLBAERR;
-						default:
-							return MSCMDERR;
-					}
-				default:
-					return MS_SCSI_ERROR;
-			}
-		default:
-			Serial.printf("SCSI Error: %d\n",msStatus);
-			return msStatus;
-	}
-}
 
 //---------------------------------------------------------------------------
 // Test Unit Ready

@@ -100,7 +100,7 @@ uint8_t mscInit(void) {
 	DBGPrintf("## mscInit after msgGetMaxLun: %d\n\r", msResult);
 	delay(150);
 	//-------------------------------------------------------
-	msResult = msDrive1.msStartStopUnit(1);
+//	msResult = msDrive1.msStartStopUnit(1);
 	msResult = msDrive1.WaitMediaReady();
 	if(msResult)
 		return msResult;
@@ -183,3 +183,58 @@ msInquiryResponse_t *getDriveInquiry(void) {
 	return &msInquiry;
 }
 
+// Proccess Possible SCSI errors
+uint8_t msProcessError(uint8_t msStatus) {
+	uint8_t msResult = 0;
+	
+	switch(msStatus) {
+		case MS_CBW_PASS:
+			return MS_CBW_PASS;
+			break;
+		case MS_CBW_PHASE_ERROR:
+			Serial.printf("SCSI Phase Error: %d\n",msStatus);
+			return MS_SCSI_ERROR;
+			break;
+		case MS_CSW_TAG_ERROR:
+			Serial.printf("CSW Tag Error: %d\n",MS_CSW_TAG_ERROR);
+			return MS_CSW_TAG_ERROR;
+			break;
+		case MS_CSW_SIG_ERROR:
+			Serial.printf("CSW Signature Error: %d\n",MS_CSW_SIG_ERROR);
+			return MS_CSW_SIG_ERROR;
+			break;
+		case MS_CBW_FAIL:
+			msResult = getDriveSense(&msSense);
+			switch(msSense.SenseKey) {
+				case MSUNITATTENTION:
+					switch(msSense.AdditionalSenseCode) {
+						case MSMEDIACHANGED:
+							return MSMEDIACHANGEDERR;
+							break;
+						default:
+							msStatus = MSUNITNOTREADY;
+					}
+				case MSNOTREADY:
+					switch(msSense.AdditionalSenseCode) {
+						case MSMEDIUMNOTPRESENT:
+							msStatus = MSNOMEDIAERR;
+							break;
+						default:
+							 msStatus = MSUNITNOTREADY;
+					}
+				case MSILLEGALREQUEST:
+					switch(msSense.AdditionalSenseCode) {
+						case MSLBAOUTOFRANGE:
+							msStatus = MSBADLBAERR;
+							break;
+						default:
+							msStatus = MSCMDERR;
+					}
+				default:
+					msStatus = MS_SCSI_ERROR;
+			}
+		default:
+			Serial.printf("SCSI Error: %d\n",msStatus);
+			return msStatus;
+	}
+}

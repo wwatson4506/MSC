@@ -65,7 +65,6 @@ protected:
 	void init();
 	uint8_t msDoCommand(msCommandBlockWrapper_t *CBW, void *buffer);
 	uint8_t msGetCSW();
-	uint8_t msProcessError(uint8_t msStatus);
 	uint8_t msCheckCSW(msCommandStatusWrapper_t *CSW);
 private:
 	Pipe_t mypipes[3] __attribute__ ((aligned(32)));

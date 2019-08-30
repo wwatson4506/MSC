@@ -5,7 +5,7 @@ This is a USB Mass Storage driver based on PJRC's USBHost_t36 library.
 
 It is still very much WIP.
 You will need Arduino version 1.89 and Teensyduino version 1.47 Beta 2 from PJRC.
-Currently there is no eample programs within MSC itself. For examples of the use of MSC
+Currently there is no example programs within MSC itself. For examples of the use of MSC
 you need to use example programs found in WMXZ's uSDFS library which implements MSC.
 
 Teensyduino 1.47Beta2 found here in post #2:

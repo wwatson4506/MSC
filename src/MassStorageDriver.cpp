@@ -189,7 +189,7 @@ uint8_t msController::WaitMediaReady() {
 	uint8_t msResult = 0;
 	do {
 		msResult = msTestReady();
-	} while(msResult);
+	} while(msResult == 1);
 // TODO: Process a Timeout
 	return msResult;
 }

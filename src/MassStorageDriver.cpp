@@ -245,6 +245,7 @@ uint8_t msController::msCheckCSW(msCommandStatusWrapper_t *CSW) {
 	if(CSW->Signature != CSWSIGNATURE) return MS_CSW_SIG_ERROR; // Signature error
 	if(CSW->Tag != CBWTag) return MS_CSW_TAG_ERROR; // Tag mismatch error
 	if(CSW->Status != 0) return CSW->Status; // Actual status from last transaction 
+	return CSW->Status;
 }
 
 

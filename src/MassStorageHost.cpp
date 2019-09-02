@@ -205,6 +205,7 @@ uint8_t msProcessError(uint8_t msStatus) {
 			break;
 		case MS_CBW_FAIL:
 			msResult = getDriveSense(&msSense);
+			if(msResult) return msResult;
 			switch(msSense.SenseKey) {
 				case MSUNITATTENTION:
 					switch(msSense.AdditionalSenseCode) {

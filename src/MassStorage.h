@@ -25,6 +25,9 @@
  
  //MassStorage.h
 
+#include "Arduino.h"
+#include "msc.h"
+
 #ifndef _MASS_STORAGE_H_
 #define _MASS_STORAGE_H_
 
@@ -68,9 +71,36 @@
 
 #define MAXLUNS				16
 
+// Big Endian/Little Endian
+#define swap32(x) ((x >> 24) & 0xff) | \
+				  ((x << 8) & 0xff0000) | \
+				  ((x >> 8) & 0xff00) |  \
+                  ((x << 24) & 0xff000000)
+
+#define MAXDRIVES 2 // Could be more but is this even practical?
+#define MAXTRANSFERS 10
+
+typedef class msController *Device_p;
+#define MSC1 0
+#define MSC2 1 
+#define MSC3 2
+#define MSC4 3
+
+/*
+Define  USE_EXTENAL_INIT to Initialize MSC Externally.
+If defined, MSC needs the following setup in the ino sketch:
+ 	USBHost myusb;
+	USBHub hub1(myusb);
+	USBHub hub2(myusb);
+	USBHub hub3(myusb);
+	USBHub hub4(myusb);
+	myusb.begin();
+    mscInit();
+*/
+#define USE_EXTENAL_INIT
+
 // Command Block Wrapper Struct
-typedef struct
-{
+typedef struct {
 	uint32_t Signature;
 	uint32_t Tag;
 	uint32_t TransferLength;
@@ -81,24 +111,30 @@ typedef struct
 }  __attribute__((packed)) msCommandBlockWrapper_t;
 
 // MSC Command Status Wrapper Struct
-typedef struct
-{
+typedef struct {
 	uint32_t Signature;
 	uint32_t Tag;
 	uint32_t DataResidue;
 	uint8_t  Status;
 }  __attribute__((packed)) msCommandStatusWrapper_t;
 
+// MSC Transfer Struct. (WIP)
+typedef struct MSC_transfer MSC_transfer_t;
+struct MSC_transfer {
+	bool completed;
+	void *buffer;
+	msCommandBlockWrapper_t *CBW;
+	msCommandStatusWrapper_t *CSW;
+};
+
 // MSC Device Capacity Struct
-typedef struct
-{
+typedef struct {
 	uint32_t Blocks;
 	uint32_t BlockSize;
-} msSCSICapacity_t;
+} __attribute__((packed)) msSCSICapacity_t;
 
 // MSC Inquiry Command Reponse Struct
-typedef struct
-{
+typedef struct {
 	unsigned DeviceType          : 5;
 	unsigned PeripheralQualifier : 3;
 	unsigned Reserved            : 7;
@@ -124,9 +160,23 @@ typedef struct
 	uint8_t  RevisionID[4];
 }  __attribute__((packed)) msInquiryResponse_t;
 
+// MSC Drive status/info struct
+typedef struct {
+	bool connected = false;
+	bool initialized = false;
+	uint8_t hubNumber;
+	uint8_t hubPort;
+	uint8_t deviceAddress;
+	uint16_t idVendor;
+	uint16_t idProduct;
+	msSCSICapacity_t capacity;
+	msInquiryResponse_t inquiry;	
+} __attribute__((packed)) msDriveInfo_t;
+
+//static msDriveInfo_t msDriveInfo[MAXDRIVES];
+
 // Request Sense Response Struct
-typedef struct
-{
+typedef struct {
 	uint8_t  ResponseCode;
 	uint8_t  SegmentNumber;
 	unsigned SenseKey            : 4;
@@ -149,31 +199,67 @@ typedef struct
 extern "C" {
 #endif
 void hexDump(const void *ptr, uint32_t len);
+uint8_t findDevices(void);
 uint8_t mscInit(void);
-bool deviceAvailable(void);
-bool deviceInitialized(void);
-uint8_t	WaitDriveReady(void);
+uint8_t initDrive(uint8_t device);
+void deInitDrive(uint8_t device);
+uint8_t setDrive(uint8_t drive);
+uint8_t getDrive(void);
+uint8_t getDriveCount(void);
+msDriveInfo_t *getDriveInfo(uint8_t dev);
+boolean deviceAvailable(uint8_t device);
+boolean deviceInitialized(uint8_t device);
+bool checkDeviceConnected(uint8_t device);
+uint8_t msStartStopUnit(uint8_t mode);
+uint8_t msTestReady(uint8_t drv);
+uint8_t WaitMediaReady(uint8_t drv);
+uint8_t msTransfer(MSC_transfer_t *transfer, void *buffer);
 uint8_t readSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks);
 uint8_t writeSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks);
+void msCurrentLun(uint8_t lun);
+uint8_t mscReportLUNs(uint8_t *Buffer);
+uint8_t msStartStopUnit(uint8_t mode);
 uint8_t msProcessError(uint8_t msStatus);
-msSCSICapacity_t *getDriveCapacity(void);
-msInquiryResponse_t *getDriveInquiry(void);
-uint8_t getDriveSense(msRequestSenseResponse_t *mscSense);
+uint8_t mscDriveInquiry(uint8_t drv);
+uint8_t getDriveInquiry(uint8_t drv);
+//uint8_t getDriveInquiry(msInquiryResponse_t *mscInquiry, uint8_t drv);
+uint8_t mscDriveCapacity(uint8_t drv);
+uint8_t getDriveCapacity(uint8_t drv);
+//uint8_t getDriveCapacity(msSCSICapacity_t *mscCapacity, uint8_t drv);
+uint8_t mscDriveSense(msRequestSenseResponse_t *mscSense);
 #ifdef __cplusplus
 }
 #endif
 
 // C++ prototypes
 void hexDump(const void *ptr, uint32_t len);
+uint8_t findDevices(void);
 uint8_t mscInit(void);
-bool deviceAvailable(void);
-bool deviceInitialized(void);
-uint8_t	WaitDriveReady(void);
+uint8_t initDrive(uint8_t device);
+void deInitDrive(uint8_t device);
+uint8_t setDrive(uint8_t drive);
+uint8_t getDrive(void);
+uint8_t getDriveCount(void);
+msDriveInfo_t *getDriveInfo(uint8_t dev);
+bool checkDeviceConnected(uint8_t device);
+boolean deviceAvailable(uint8_t device);
+boolean deviceInitialized(uint8_t device);
+uint8_t msStartStopUnit(uint8_t mode);
+uint8_t WaitMediaReady(uint8_t drv);
+uint8_t msTransfer(MSC_transfer_t *transfer, void *buffer);
 uint8_t readSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks);
 uint8_t writeSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks);
+void msCurrentLun(uint8_t lun);
+uint8_t mscReportLUNs(uint8_t *Buffer);
+uint8_t msStartStopUnit(uint8_t mode);
+uint8_t msTestReady(uint8_t drv);
 uint8_t msProcessError(uint8_t msStatus);
-msSCSICapacity_t *getDriveCapacity(void);
-msInquiryResponse_t *getDriveInquiry(void);
-uint8_t getDriveSense(msRequestSenseResponse_t *mscSense);
+uint8_t mscDriveInquiry(uint8_t drv);
+uint8_t getDriveInquiry(uint8_t drv);
+//uint8_t getDriveInquiry(msInquiryResponse_t *mscInquiry, uint8_t drv);
+uint8_t mscDriveCapacity(uint8_t drv);
+uint8_t getDriveCapacity(uint8_t drv);
+//uint8_t getDriveCapacity(msSCSICapacity_t *mscCapacity, uint8_t drv);
+uint8_t mscDriveSense(msRequestSenseResponse_t *mscSense);
 #endif //_MASS_STORAGE_H_
 

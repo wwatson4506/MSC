@@ -25,18 +25,12 @@
 //MassStorageDriver.cpp
 
 #include <Arduino.h>
-//#include "USBHost_t36.h"  // Read this header first for key info
 #include "msc.h"
 #include "MassStorage.h"
 
 #define print   USBHost::print_
 #define println USBHost::println_
 
-// Big Endian/Little Endian
-#define swap32(x) ((x >> 24) & 0xff) | \
-				  ((x << 8) & 0xff0000) | \
-				  ((x >> 8) & 0xff00) |  \
-                  ((x << 24) & 0xff000000)
 
 void msController::init()
 {
@@ -45,14 +39,15 @@ void msController::init()
 	contribute_String_Buffers(mystring_bufs, sizeof(mystring_bufs)/sizeof(strbuf_t));
 	driver_ready_for_device(this);
 }
+
 bool msController::claim(Device_t *dev, int type, const uint8_t *descriptors, uint32_t len)
 {
 	println("msController claim this=", (uint32_t)this, HEX);
 	// only claim at interface level
 
 	if (type != 1) return false;
+//    if(dev->idVendor != 0x0BC2) return false;
 	if (len < 9+7+7) return false; // Interface descriptor + 2 endpoint decriptors 
-
 	print_hexbytes(descriptors, len);
 
 	uint32_t numendpoint = descriptors[4];
@@ -99,12 +94,24 @@ bool msController::claim(Device_t *dev, int type, const uint8_t *descriptors, ui
 	datapipeOut = new_Pipe(dev, 2, endpointOut, 0, packetSizeOut, intervalOut);
 	datapipeIn->callback_function = callbackIn;
 	datapipeOut->callback_function = callbackOut;
-
+	idVendor = dev->idVendor;
+	idProduct = dev->idProduct;
+	hubNumber = dev->hub_address;
+	deviceAddress = dev->address;
+	hubPort = dev->hub_port; // Used for device ID with multiple drives.
 	msOutCompleted = false;
 	msInCompleted = false;
 	msControlCompleted = false;
 	deviceAvailable = true;
+	deviceInitialized = true;
 	return true;
+}
+
+void msController::disconnect()
+{
+	deviceAvailable = false;
+	deviceInitialized = false;
+	println("Device Disconnected...");
 }
 
 void msController::control(const Transfer_t *transfer)
@@ -135,19 +142,15 @@ void msController::callbackOut(const Transfer_t *transfer)
 	}
 }
 
-void msController::disconnect()
-{
-	deviceAvailable = false;
-	deviceInitialized = false;
-	println("Device Disconnected...");
-}
-
 void msController::new_dataOut(const Transfer_t *transfer)
 {
 	uint32_t len = transfer->length - ((transfer->qtd.token >> 16) & 0x7FFF);
 	println("msController dataOut (static)", len, DEC);
 	print_hexbytes((uint8_t*)transfer->buffer, (len < 32)? len : 32 );
 	msOutCompleted = true; // Last out transaction is completed.
+	if (completedFunction) {
+		completedFunction(true);
+	};
 }
 
 void msController::new_dataIn(const Transfer_t *transfer)
@@ -162,6 +165,9 @@ void msController::new_dataIn(const Transfer_t *transfer)
 		else println("** ????");
 	}
 	msInCompleted = true; // Last in transaction is completed.
+	if (completedFunction) {
+		completedFunction(true);
+	};
 }
 
 //---------------------------------------------------------------------------
@@ -169,7 +175,6 @@ void msController::new_dataIn(const Transfer_t *transfer)
 void msController::msReset() {
 	mk_setup(setup, 0x21, 0xff, 0, 0, 0);
 	queue_Control_Transfer(device, &setup, NULL, this);
-	deviceInitialized = true;
 }
 
 //---------------------------------------------------------------------------
@@ -179,240 +184,53 @@ uint8_t msController::msGetMaxLun() {
 	mk_setup(setup, 0xa1, 0xfe, 0, 0, 1);
 	msControlCompleted = false;
 	queue_Control_Transfer(device, &setup, report, this);
-	while (!msControlCompleted) ;
-	
 	maxLUN = report[0];
 	return maxLUN;
 }
 
-uint8_t msController::WaitMediaReady() {
-	uint8_t msResult = 0;
-	do {
-		msResult = msTestReady();
-	} while(msResult == 1);
-// TODO: Process a Timeout
-	return msResult;
+//---------------------------------------------------------------------------
+// Test for completed in transfer 
+bool msController::inTransferComplete() {
+	if(!msInCompleted)
+		return false;
+	msInCompleted = false;
+	return true;
+}
+
+//---------------------------------------------------------------------------
+// Test for completed out transfer 
+bool msController::outTransferComplete() {
+	if(!msOutCompleted)
+		return false;
+	msOutCompleted = false;
+	return true;
 }
 
 //---------------------------------------------------------------------------
 // Send SCSI Command
-
-uint8_t msController::msDoCommand(msCommandBlockWrapper_t *CBW,	void *buffer)
+void msController::msDoCommand(msCommandBlockWrapper_t *CBW)
 {
-	uint8_t CSWResult = 0;
-	if(CBWTag == 0xFFFFFFFF)
-		CBWTag = 1;
-
 	queue_Data_Transfer(datapipeOut, CBW, sizeof(msCommandBlockWrapper_t), this);
-	while(!msOutCompleted);  // Wait for out transaction to complete.
-	msOutCompleted = false;
-
-	if((CBW->Flags == CMDDIRDATAIN)) { // Data from device
-		queue_Data_Transfer(datapipeIn, buffer, CBW->TransferLength, this);
-		while(!msInCompleted);  // Wait for in transaction to complete.
-		msInCompleted = false;
-	} else { // Data to device
-		queue_Data_Transfer(datapipeOut, buffer, CBW->TransferLength, this);
-		while(!msOutCompleted);
-		msOutCompleted = false;
-	}
-	CSWResult = msGetCSW();
-	return CSWResult;  // Return CSW status
 }
 
 //---------------------------------------------------------------------------
-// Get Command Status Wrapper
-uint8_t msController::msGetCSW() {
-	uint8_t CSWResult = 0;
-	msCommandStatusWrapper_t StatusBlockWrapper = (msCommandStatusWrapper_t)
-	{
-		.Signature = CSWSIGNATURE,
-		.Tag = 0,
-		.DataResidue = 0, // TODO: Proccess this if received.
-		.Status = 0
-	};
-	queue_Data_Transfer(datapipeIn, &StatusBlockWrapper, sizeof(StatusBlockWrapper), this);
-	while(!msInCompleted);
-	msInCompleted = false;
-	CSWResult = msCheckCSW(&StatusBlockWrapper);
-	return CSWResult;
-}
-
-//---------------------------------------------------------------------------
-// Check for valid CSW
-uint8_t msController::msCheckCSW(msCommandStatusWrapper_t *CSW) {
-
-	if(CSW->Signature != CSWSIGNATURE) return MS_CSW_SIG_ERROR; // Signature error
-	if(CSW->Tag != CBWTag) return MS_CSW_TAG_ERROR; // Tag mismatch error
-	if(CSW->Status != 0) return CSW->Status; // Actual status from last transaction 
-	return CSW->Status;
-}
-
-
-//---------------------------------------------------------------------------
-// Test Unit Ready
-uint8_t msController::msTestReady() {
-	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
-	{
-		.Signature          = CBWSIGNATURE,
-		.Tag                = ++CBWTag,
-		.TransferLength     = 0,
-		.Flags              = CMDDIRDATAIN,
-		.LUN                = currentLUN,
-		.CommandLength      = 6,
-		.CommandData        = {CMDTESTUNITREADY, 0x00, 0x00, 0x00, 0x00, 0x00}
-	};
-	queue_Data_Transfer(datapipeOut, &CommandBlockWrapper, sizeof(CommandBlockWrapper), this);
-	while(!msOutCompleted);
-	msOutCompleted = false;
-	return msGetCSW();
-}
-
-//---------------------------------------------------------------------------
-// Start/Stop unit
-uint8_t msController::msStartStopUnit(uint8_t mode) {
-	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
-	{
-		.Signature          = CBWSIGNATURE,
-		.Tag                = ++CBWTag,
-		.TransferLength     = 0,
-		.Flags              = CMDDIRDATAIN,
-		.LUN                = currentLUN,
-		.CommandLength      = 6,
-		.CommandData        = {CMDSTARTSTOPUNIT, 0x01, 0x00, 0x00, mode, 0x00}
-	};
-	queue_Data_Transfer(datapipeOut, &CommandBlockWrapper, sizeof(CommandBlockWrapper), this);
-	while(!msOutCompleted);
-	msOutCompleted = false;
-	return msGetCSW();
-}
-
-//---------------------------------------------------------------------------
-// Read Mass Storage Device Capacity (Number of Blocks and Block Size)
-uint8_t msController::msReadDeviceCapacity(msSCSICapacity_t * const Capacity)
+// Retrieve SCSI Command Status Wapper
+void msController::msGetCSW(msCommandStatusWrapper_t *CSW)
 {
-	uint8_t result = 0;
-	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
-	{
-		.Signature          = CBWSIGNATURE,
-		.Tag                = ++CBWTag,
-		.TransferLength     = sizeof(msSCSICapacity_t),
-		.Flags              = CMDDIRDATAIN,
-		.LUN                = currentLUN,
-		.CommandLength      = 10,
-		.CommandData        = {CMDRDCAPACITY10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}
-	};
-	result = msDoCommand(&CommandBlockWrapper, Capacity);
-	Capacity->Blocks = swap32(Capacity->Blocks);
-	Capacity->BlockSize = swap32(Capacity->BlockSize);
-	return result;
+	queue_Data_Transfer(datapipeIn, CSW, sizeof(msCommandStatusWrapper_t), this);
 }
 
 //---------------------------------------------------------------------------
-// Do Mass Storage Device Inquiry
-uint8_t msController::msDeviceInquiry(msInquiryResponse_t * const Inquiry)
-{
-	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
-	{
-		.Signature          = CBWSIGNATURE,
-		.Tag                = ++CBWTag,
-		.TransferLength     = sizeof(msInquiryResponse_t),
-		.Flags              = CMDDIRDATAIN,
-		.LUN                = currentLUN,
-		.CommandLength      = 6,
-		.CommandData        = {CMDINQUIRY,0x00,0x00,0x00,sizeof(msInquiryResponse_t),0x00}
-	};
-	return msDoCommand(&CommandBlockWrapper, Inquiry);
+// Send SCSI data
+//void msController::msTxData(msCommandBlockWrapper_t *CBW,	void *buffer) {
+void msController::msTxData(MSC_transfer_t *transfer) {
+	queue_Data_Transfer(datapipeOut, transfer->buffer, transfer->CBW->TransferLength, this);
 }
 
 //---------------------------------------------------------------------------
-// Request Sense Data
-uint8_t msController::msRequestSense(msRequestSenseResponse_t * const Sense)
-{
-	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
-	{
-		.Signature          = CBWSIGNATURE,
-		.Tag                = ++CBWTag,
-		.TransferLength     = sizeof(msRequestSenseResponse_t),
-		.Flags              = CMDDIRDATAIN,
-		.LUN                = currentLUN,
-		.CommandLength      = 6,
-		.CommandData        = {CMDREQUESTSENSE, 0x00, 0x00, 0x00, sizeof(msRequestSenseResponse_t), 0x00}
-	};
-	return msDoCommand(&CommandBlockWrapper, Sense);
-}
-
-//---------------------------------------------------------------------------
-// Report LUNs
-uint8_t msController::msReportLUNs(uint8_t *Buffer)
-{
-	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
-	{
-		.Signature          = CBWSIGNATURE,
-		.Tag                = ++CBWTag,
-		.TransferLength     = MAXLUNS,
-		.Flags              = CMDDIRDATAIN,
-		.LUN                = currentLUN,
-		.CommandLength      = 12,
-		.CommandData        = {CMDREPORTLUNS, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, MAXLUNS, 0x00, 0x00}
-	};
-	return msDoCommand(&CommandBlockWrapper, Buffer);
-}
-
-//---------------------------------------------------------------------------
-// Read Sectors (Multi Sector Capable)
-uint8_t msController::msReadBlocks(
-									const uint32_t BlockAddress,
-									const uint16_t Blocks,
-									const uint16_t BlockSize,
-									void * sectorBuffer)
-	{
-	uint8_t BlockHi = (Blocks >> 8) & 0xFF;
-	uint8_t BlockLo = Blocks & 0xFF;
-	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
-	{
-	
-		.Signature          = CBWSIGNATURE,
-		.Tag                = ++CBWTag,
-		.TransferLength     = (uint32_t)(Blocks * BlockSize),
-		.Flags              = CMDDIRDATAIN,
-		.LUN                = currentLUN,
-		.CommandLength      = 10,
-		.CommandData        = {CMDRD10, 0x00,
-							  (uint8_t)(BlockAddress >> 24),
-							  (uint8_t)(BlockAddress >> 16),
-							  (uint8_t)(BlockAddress >> 8),
-							  (uint8_t)(BlockAddress & 0xFF),
-							   0x00, BlockHi, BlockLo, 0x00}
-	};
-	return msDoCommand(&CommandBlockWrapper, sectorBuffer);
-}
-
-//---------------------------------------------------------------------------
-// Write Sectors (Multi Sector Capable)
-uint8_t msController::msWriteBlocks(
-                                  const uint32_t BlockAddress,
-                                  const uint16_t Blocks,
-                                  const uint16_t BlockSize,
-								  void * sectorBuffer)
-	{
-	uint8_t BlockHi = (Blocks >> 8) & 0xFF;
-	uint8_t BlockLo = Blocks & 0xFF;
-	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
-	{
-		.Signature          = CBWSIGNATURE,
-		.Tag                = ++CBWTag,
-		.TransferLength     = (uint32_t)(Blocks * BlockSize),
-		.Flags              = CMDDIRDATAOUT,
-		.LUN                = currentLUN,
-		.CommandLength      = 10,
-		.CommandData        = {CMDWR10, 0x00,
-		                      (uint8_t)(BlockAddress >> 24),
-							  (uint8_t)(BlockAddress >> 16),
-							  (uint8_t)(BlockAddress >> 8),
-							  (uint8_t)(BlockAddress & 0xFF),
-							  0x00, BlockHi, BlockLo, 0x00}
-	};
-	return msDoCommand(&CommandBlockWrapper, sectorBuffer);
+// Recieve SCSI data
+//void msController::msRxData(msCommandBlockWrapper_t *CBW,	void *buffer) {
+void msController::msRxData(MSC_transfer_t *transfer) {
+	queue_Data_Transfer(datapipeIn, transfer->buffer, transfer->CBW->TransferLength, this);
 }
 

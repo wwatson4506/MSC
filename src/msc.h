@@ -28,7 +28,7 @@
 #ifndef _MSC_H_
 #define _MSC_H_
 
-#include "USBHost_t36.h"
+#include "USBHost_t36.h"  // Read this header first for key info
 #include "MassStorage.h"
 
 //--------------------------------------------------------------------------
@@ -38,22 +38,22 @@ public:
 	msController(USBHost *host) { init(); }
 	void msReset();
 	uint8_t msGetMaxLun();
-	void msCurrentLun(uint8_t lun) {currentLUN = lun;}
-	uint8_t msCurrentLun() {return currentLUN;}
+//	uint8_t msCurrentLun() {return currentLUN;}
 	bool available() { delay(0); return deviceAvailable; }
 	bool initialized() { delay(0); return deviceInitialized; }
-	uint8_t WaitMediaReady();
-	uint8_t msTestReady();
-	uint8_t msReportLUNs(uint8_t *Buffer);
-	uint8_t msStartStopUnit(uint8_t mode);
-	uint8_t msReadDeviceCapacity(msSCSICapacity_t * const Capacity);
-	uint8_t msDeviceInquiry(msInquiryResponse_t * const Inquiry);
-	uint8_t msRequestSense(msRequestSenseResponse_t * const Sense);
-	uint8_t msRequestSense(void *Sense);
-	uint8_t msReadBlocks(const uint32_t BlockAddress, const uint16_t Blocks,
-						 const uint16_t BlockSize, void * sectorBuffer);
-	uint8_t msWriteBlocks(const uint32_t BlockAddress, const uint16_t Blocks,
-                        const uint16_t BlockSize,	void * sectorBuffer);
+	uint16_t getIDVendor() {return idVendor; }
+	uint16_t getIDProduct() {return idProduct; }
+	uint8_t getHubNumber() { return hubNumber; }
+	uint8_t getHubPort() { return hubPort; }
+	uint8_t getDeviceAddress() { return deviceAddress; }
+	void attachCompleted(void (*f)(bool complete)) { completedFunction = f; }
+	void msDoCommand(msCommandBlockWrapper_t *CBW);
+	bool inTransferComplete(void);
+	bool outTransferComplete(void);
+	void msTxData(MSC_transfer_t *transfer);
+	void msRxData(MSC_transfer_t *transfer);
+	void msGetCSW(msCommandStatusWrapper_t *CSW);
+
 protected:
 	virtual bool claim(Device_t *device, int type, const uint8_t *descriptors, uint32_t len);
 	virtual void control(const Transfer_t *transfer);
@@ -63,13 +63,11 @@ protected:
 	void new_dataIn(const Transfer_t *transfer);
 	void new_dataOut(const Transfer_t *transfer);
 	void init();
-	uint8_t msDoCommand(msCommandBlockWrapper_t *CBW, void *buffer);
-	uint8_t msGetCSW();
-	uint8_t msCheckCSW(msCommandStatusWrapper_t *CSW);
 private:
 	Pipe_t mypipes[3] __attribute__ ((aligned(32)));
-	Transfer_t mytransfers[7] __attribute__ ((aligned(32)));
+	Transfer_t mytransfers[3] __attribute__ ((aligned(32)));
 	strbuf_t mystring_bufs[1];
+	void (*completedFunction)(bool complete);
 	uint32_t packetSizeIn;
 	uint32_t packetSizeOut;
 	Pipe_t *datapipeIn;
@@ -79,11 +77,15 @@ private:
 	setup_t setup;
 	uint8_t report[8];
 	uint8_t maxLUN = 0;
-	uint8_t currentLUN = 0;
+	uint16_t idVendor = 0;
+	uint16_t idProduct = 0;
+	uint8_t hubNumber = 0;
+	uint8_t hubPort = 0;
+	uint8_t deviceAddress = 0;
+//	uint8_t currentLUN = 0;
 	volatile bool msOutCompleted = false;
 	volatile bool msInCompleted = false;
 	volatile bool msControlCompleted = false;
-	uint32_t CBWTag = 0;
 	bool deviceAvailable = false;
 	bool deviceInitialized = false;
 };

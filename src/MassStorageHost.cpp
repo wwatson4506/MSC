@@ -26,7 +26,6 @@
 // MassStorageHost.cpp
 // This file is the interface between MSC and uSDFS 
 #include <Arduino.h>
-//#include "USBHost_t36.h"
 #include "msc.h"
 #include "MassStorage.h"
 
@@ -37,153 +36,447 @@
 #undef DEBUG_MSC_VERBOSE
 void inline DBGPrintf(...) {};
 #else
-#define DBGPrintf Serial1.printf
+#define DBGPrintf Serial.printf
 #endif
 
 #ifndef DEBUG_MSC_VERBOSE
 void inline VDBGPrintf(...) {};
 void inline DBGHexDump(const void *ptr, uint32_t len) {};
 #else
-#define VDBGPrintf Serial1.printf
+#define VDBGPrintf Serial.printf
 #define DBGHexDump hexDump
 #endif
 
 //#define print   USBHost::print_
 //#define println USBHost::println_
 
+
 extern USBHost myusb;
+
 msController msDrive1(myusb);
 msController msDrive2(myusb);
-msController msDrive3(myusb);
+//msController msDrive3(myusb);
+//msController msDrive4(myusb);
+Device_p mscDrives[] = {&msDrive1, &msDrive2};
 
-msSCSICapacity_t msCapacity;
-msInquiryResponse_t msInquiry;
 msRequestSenseResponse_t msSense;
+msCommandStatusWrapper_t CSW;
+
+static msDriveInfo_t msDriveInfo[MAXDRIVES];
+static MSC_transfer_t myMSCtransfers[MAXTRANSFERS];
+static uint8_t xferIndex = 0; 
+
+static uint8_t currentDrive = MSC1; // Default Drive
+static 	uint8_t numDevices = 0;
+
+static uint8_t maxLUN = 16;
+static uint8_t currentLUN = 0;
+static uint32_t CBWTag = 0;
+
+//Device_p mscDevice = mscDrives[currentDrive];
 
 // A small hex dump function
 void hexDump(const void *ptr, uint32_t len)
 {
   uint32_t  i = 0, j = 0;
-  uint8_t   c=0;
+  uint8_t   c = 0;
   const uint8_t *p = (const uint8_t *)ptr;
 
-  Serial1.printf("BYTE      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n\r");
-  Serial1.printf("---------------------------------------------------------\n\r");
+  Serial.printf("BYTE      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n\r");
+  Serial.printf("---------------------------------------------------------\n\r");
   for(i = 0; i <= (len-1); i+=16) {
-   Serial1.printf("%4.4x      ",i);
+   Serial.printf("%4.4x      ",i);
    for(j = 0; j < 16; j++) {
       c = p[i+j];
-      Serial1.printf("%2.2x ",c);
+      Serial.printf("%2.2x ",c);
     }
-    Serial1.printf("  ");
+    Serial.printf("  ");
     for(j = 0; j < 16; j++) {
       c = p[i+j];
       if(c > 31 && c < 127)
-        Serial1.printf("%c",c);
+        Serial.printf("%c",c);
       else
-        Serial1.printf(".");
+        Serial.printf(".");
     }
-    Serial1.println();
+    Serial.printf("\n");
   }
 
 }
 
-// Initialize Mass Storage Device
-uint8_t mscInit(void) {
-	uint8_t msResult = 0;
+// Callback function for completed xfer. (Not used at this time)
+static void transferCompleted(bool complete) {
+//	myMSCtransfers[xferIndex].completed = complete;
+}
 
-	while(!msDrive1.available());
-	msDrive1.msReset();
+// Do a complete 2 or 3 stage transfer.
+uint8_t msTransfer(MSC_transfer_t *transfer, void *buffer) {
+	msCommandStatusWrapper_t CSW; // Create a local CSW Struct
+	transfer->completed = false;
+	mscDrives[currentDrive]->msDoCommand(transfer->CBW); // Command stage.
+	while(!mscDrives[currentDrive]->outTransferComplete());
+	//If buffer == NULL then no data stage is needed.
+	if(buffer != NULL) {  // Data stage needed.
+		transfer->buffer = buffer;
+		if(transfer->CBW->Flags == CMDDIRDATAIN) {
+			mscDrives[currentDrive]->msRxData(transfer); // Data In Stage.
+			while(!mscDrives[currentDrive]->inTransferComplete());
+		} else {
+			mscDrives[currentDrive]->msTxData(transfer); // Data Out Stage.
+			while(!mscDrives[currentDrive]->outTransferComplete());
+		}
+	}
+	transfer->CSW = &CSW;
+	mscDrives[currentDrive]->msGetCSW(transfer->CSW); // Status Stage.
+	while(!mscDrives[currentDrive]->inTransferComplete()); // WAIT FOR IT !!! :(
+	transfer->completed = true; // All stages of this transfer have completed.
+	//Check for special cases. 
+	//If test for unit ready command is given then
+	//  return the CSW status byte.
+	//Bit 0 == 1 == not ready else
+	//Bit 0 == 0 == ready.
+	//And the Start/Stop Unit command as well.
+	if((transfer->CBW->CommandData[0] == CMDTESTUNITREADY) ||
+	   (transfer->CBW->CommandData[0] == CMDSTARTSTOPUNIT))
+		return transfer->CSW->Status;
+	else // Process possible SCSI errors.
+		return msProcessError(transfer->CSW->Status);
+}
+
+// Set current LUN
+void msCurrentLun(uint8_t lun) {currentLUN = lun;}
+
+// Initialize a Mass Storage Device
+uint8_t initDrive(uint8_t device) {
+	uint8_t msResult = 0;
+	// Callback function for completed In/Out trasfers.
+	mscDrives[device]->attachCompleted(transferCompleted);
+	// Wait for device to become available.
+//	while(!mscDrives[device]->available());
+	
+	mscDrives[device]->msReset(); // Reset device
 	delay(1000);
-	DBGPrintf("## mscInit before msgGetMaxLun: %d\n\r", msResult);
-	uint8_t maxLUN = msDrive1.msGetMaxLun();
-	DBGPrintf("## mscInit after msgGetMaxLun: %d\n\r", msResult);
+	maxLUN = mscDrives[device]->msGetMaxLun();  // Get MAXLUN for device (Usualy returns 0).
 	delay(150);
 	//-------------------------------------------------------
-//	msResult = msDrive1.msStartStopUnit(1);
-	msResult = msDrive1.WaitMediaReady();
-	if(msResult)
-		return msResult;
-	// Test to see if multiple LUN see if we find right data...
-	for (uint8_t currentLUN=0; currentLUN <= maxLUN; currentLUN++) {
-		msDrive1.msCurrentLun(currentLUN);
+// Start/Stop unit on hold for now. Not all devices respond to it
+// the same way. Is it really needed for most devices? Not understanding
+// it's use. Am able to to plug in a CDROM and load or eject the media.
+// But that's all that works consistently with drives:(
+//	msResult = msStartStopUnit(1);	// 0 = transition to stopped power contition
+									// 1 = transition to active power contition
+									// 2 = load media, tested on SATA CDROM
+									// 3 = eject media, Tested on SATA CDROM
+	msDriveInfo[device].connected = true;  // Device connected.
+	msDriveInfo[device].initialized = true;
+	msDriveInfo[device].hubNumber = mscDrives[device]->getHubNumber();  // Which HUB.
+	msDriveInfo[device].hubPort = mscDrives[device]->getHubPort();  // Which HUB port.
+	msDriveInfo[device].deviceAddress = mscDrives[device]->getDeviceAddress();  // Which HUB.
+	msDriveInfo[device].idVendor = mscDrives[device]->getIDVendor();  // USB Vendor ID.
+	msDriveInfo[device].idProduct = mscDrives[device]->getIDProduct();  // USB Product ID.
 
-		msResult = msDrive1.msDeviceInquiry(&msInquiry);
-		DBGPrintf("## mscInit after msDeviceInquiry LUN(%d): Device Type: %d result:%d\n\r", currentLUN, msInquiry.DeviceType, msResult);
-		if(msResult)
-			return msResult;
-		DBGHexDump(&msInquiry,sizeof(msInquiry));
-		if (msInquiry.DeviceType == 0)
-			break;
-	} 
+	msResult = getDriveInquiry(device);
+	msResult = getDriveCapacity(device);
 
 	// if device is not like hard disk, probably won't work! example CDROM... 
-	if (msInquiry.DeviceType != 0)
+	if (msDriveInfo[device].inquiry.DeviceType != 0)
 		return MS_CSW_TAG_ERROR;
-
-
 	//-------------------------------------------------------
-	msResult = msDrive1.msReadDeviceCapacity(&msCapacity);
-	DBGPrintf("## mscInit after msReadDeviceCapacity: %d\n\r", msResult);
-	if(msResult)
-		return msResult;
-	DBGHexDump(&msCapacity,sizeof(msCapacity));
+	msCurrentLun(currentLUN);
+	return msResult;
+
+}
+
+// Deinit device
+void deInitDrive(uint8_t device) {
+	memset(&msDriveInfo[device], 0, sizeof(msDriveInfo_t));
+}
+
+// Find all attached drives on bootup.
+uint8_t findDevices(void) {
+	for(uint8_t i=0; i < MAXDRIVES; i++) {
+		delay(1000);
+//		Serial.printf("USB drive: %d",i);
+		if(mscDrives[i]->available() && mscDrives[i]->initialized()) {
+			numDevices++;
+//			Serial.printf(" Connected\n");
+		}// else if(!mscDrives[i]->available() && !mscDrives[i]->initialized()) {
+//			Serial.printf(" Not Connected\n");
+//		}
+	}
+	return numDevices;
+}
+
+// Set current drive index
+uint8_t setDrive(uint8_t drive) {
+	if(checkDeviceConnected(drive)) {
+		currentDrive = drive;
+		return currentDrive;
+	}
+	return currentDrive;
+}
+
+// Get current drive index
+uint8_t getDrive(void) {
+//Serial.printf("currentDrive = %d\n", currentDrive);
+	return currentDrive;
+}
+
+// Get pointer to drive info struct
+msDriveInfo_t *getDriveInfo(uint8_t dev) {
+	return &msDriveInfo[dev];
+}
+
+// Do auto connect/Initialize. (New device connected)
+
+// Do auto deInitialize. (Device disconnected)
+
+// Find and initialize all available Mass Storage Devices
+uint8_t mscInit(void) {
+	// Wait for drive(s) to come online. This can take a while!!!
+	while(findDevices() == 0);
+	// Limit number of devices to max allowed.
+	if(numDevices > MAXDRIVES) numDevices = MAXDRIVES;
+	// One or more devices found. Initialize and wait for it to be ready. 
+	for(uint8_t i = 0; i < numDevices; i++) {
+		initDrive(i);
+		WaitMediaReady(i);
+	}
+	return numDevices; // Global static device count.
+}
+
+// Return number of device (drives) available
+uint8_t getDriveCount(void) {
+	return numDevices;
+}
+
+// Check if device is online or was disconnected.
+bool checkDeviceConnected(uint8_t device) {
+	if(!deviceAvailable(device)) { // Check if device is still available.
+		deInitDrive(device); // If Not, deinit device.
+		numDevices--; // Reduce number of available devices.
+		return false; // Signal no device.
+	} else {
+		if(deviceAvailable(device)) {
+			if(!msDriveInfo[device].initialized) { // Device online. Inited?
+				initDrive(device); // No, Initialize device
+				WaitMediaReady(device); // Wait for it to be usable.
+				numDevices++; // Add to available devices.
+			}
+		}
+	}
+	return true;
+}	
+
+// Check if device is connected. (Driver level)
+bool deviceAvailable(uint8_t device) {
+	if(mscDrives[device]->available()) { 
+		return true;
+	}
+	return false;
+}
+
+// Check if drive has been initialized. (Driver level)
+bool deviceInitialized(uint8_t device) {
+	return mscDrives[device]->initialized();
+}
+
+// wait for device to become usable.
+uint8_t WaitMediaReady(uint8_t drv) {
+	uint8_t msResult;
+	uint32_t start = millis();
+	
+	do {
+		if((millis() - start) >= 1000) {
+			return MSUNITNOTREADY;  // Not Ready Error.
+		}
+		msResult = msTestReady(drv);
+	 } while(msResult == 1);
 	return msResult;
 }
 
-// Wait for drive to be usable
-bool deviceAvailable(void) {
-	return msDrive1.available();   // Check for if device is connected
-}
-
-// Check if drive has been initialized
-bool deviceInitialized(void) {
-	return msDrive1.initialized();
-}
-
-// Wait for drive to be usable
-uint8_t WaitDriveReady(void) {
-	while(!msDrive1.available());     // Check drive is online
-	if(!msDrive1.initialized())
-		mscInit();  				  // Init drive if needed.
-	return msDrive1.WaitMediaReady(); // Wait for it to be ready
-}
-
-// Read Sectors
+// Read Sectors.
 uint8_t readSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks) {
-	uint8_t msResult = 0;
-	msResult = msDrive1.msReadBlocks(BlockAddress,Blocks,(uint16_t)512,sectorBuffer);
-	return msResult;
+	if(CBWTag == 0xFFFFFFFF) CBWTag = 1;
+	uint8_t BlockHi = (Blocks >> 8) & 0xFF;
+	uint8_t BlockLo = Blocks & 0xFF;
+	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
+	{
+	
+		.Signature          = CBWSIGNATURE,
+		.Tag                = ++CBWTag,
+		.TransferLength     = (uint32_t)(Blocks * (uint16_t)512),
+		.Flags              = CMDDIRDATAIN,
+		.LUN                = currentLUN,
+		.CommandLength      = 10,
+		.CommandData        = {CMDRD10, 0x00,
+							  (uint8_t)(BlockAddress >> 24),
+							  (uint8_t)(BlockAddress >> 16),
+							  (uint8_t)(BlockAddress >> 8),
+							  (uint8_t)(BlockAddress & 0xFF),
+							   0x00, BlockHi, BlockLo, 0x00}
+	};
+	myMSCtransfers[xferIndex].CBW = &CommandBlockWrapper;
+	return msTransfer(&myMSCtransfers[xferIndex], sectorBuffer);
 }
 
-// Write Sectors
+// Write Sectors.
 uint8_t writeSectors(void *sectorBuffer,uint32_t BlockAddress, uint16_t Blocks) {
-	uint8_t msResult = 0;
-	msResult = msDrive1.msWriteBlocks(BlockAddress,Blocks,(uint16_t)512,sectorBuffer);
+	if(CBWTag == 0xFFFFFFFF) CBWTag = 1;
+	uint8_t BlockHi = (Blocks >> 8) & 0xFF;
+	uint8_t BlockLo = Blocks & 0xFF;
+	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
+	{
+		.Signature          = CBWSIGNATURE,
+		.Tag                = ++CBWTag,
+		.TransferLength     = (uint32_t)(Blocks * (uint16_t)512),
+		.Flags              = CMDDIRDATAOUT,
+		.LUN                = currentLUN,
+		.CommandLength      = 10,
+		.CommandData        = {CMDWR10, 0x00,
+		                      (uint8_t)(BlockAddress >> 24),
+							  (uint8_t)(BlockAddress >> 16),
+							  (uint8_t)(BlockAddress >> 8),
+							  (uint8_t)(BlockAddress & 0xFF),
+							  0x00, BlockHi, BlockLo, 0x00}
+	};
+ 	myMSCtransfers[xferIndex].CBW = &CommandBlockWrapper;
+	return msTransfer(&myMSCtransfers[xferIndex], sectorBuffer);
+}
+
+// Get drive sense response.
+uint8_t mscDriveSense(msRequestSenseResponse_t *mscSense) {
+	if(CBWTag == 0xFFFFFFFF)
+		CBWTag = 1;
+	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
+	{
+		.Signature          = CBWSIGNATURE,
+		.Tag                = ++CBWTag,
+		.TransferLength     = sizeof(msRequestSenseResponse_t),
+		.Flags              = CMDDIRDATAIN,
+		.LUN                = currentLUN,
+		.CommandLength      = 6,
+		.CommandData        = {CMDREQUESTSENSE, 0x00, 0x00, 0x00, sizeof(msRequestSenseResponse_t), 0x00}
+	};
+ 	myMSCtransfers[xferIndex].CBW = &CommandBlockWrapper;
+	return msTransfer(&myMSCtransfers[xferIndex], mscSense);
+}
+
+// Retrieve device capacity data.
+uint8_t getDriveCapacity(uint8_t drv) {
+	uint8_t msResult, tempDrv = drv;
+	setDrive(drv);
+	msResult = mscDriveCapacity(drv);
+	setDrive(tempDrv);
+	msDriveInfo[drv].capacity.Blocks = swap32(msDriveInfo[drv].capacity.Blocks);
+	msDriveInfo[drv].capacity.BlockSize = swap32(msDriveInfo[drv].capacity.BlockSize);
 	return msResult;
 }
 
-// Get drive sense response 
-uint8_t getDriveSense(msRequestSenseResponse_t *mscSense) {
-	uint8_t msResult = 0;
-	msResult = msDrive1.msRequestSense(mscSense);
+// Get drive capacity (Sector size and count) from decice.
+uint8_t mscDriveCapacity(uint8_t drv) {
+	if(CBWTag == 0xFFFFFFFF)
+		CBWTag = 1;
+	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
+	{
+		.Signature          = CBWSIGNATURE,
+		.Tag                = ++CBWTag,
+		.TransferLength     = sizeof(msSCSICapacity_t),
+		.Flags              = CMDDIRDATAIN,
+		.LUN                = currentLUN,
+		.CommandLength      = 10,
+		.CommandData        = {CMDRDCAPACITY10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}
+	};
+ 	myMSCtransfers[xferIndex].CBW = &CommandBlockWrapper;
+	return msTransfer(&myMSCtransfers[xferIndex], &msDriveInfo[drv].capacity);
+}
+
+// Retrieve device inquiry data.
+uint8_t getDriveInquiry(uint8_t drv) {
+	uint8_t msResult, tempDrv = drv;
+	setDrive(drv);
+	msResult = mscDriveInquiry(drv);
+	setDrive(tempDrv);
 	return msResult;
 }
 
-
-// Get drive capacity (Sector size and count)
-msSCSICapacity_t *getDriveCapacity(void) {
-	msDrive1.msReadDeviceCapacity(&msCapacity);
-	return &msCapacity;
+// Get drive information and parameters from device.
+uint8_t mscDriveInquiry(uint8_t drv) {
+	if(CBWTag == 0xFFFFFFFF)
+		CBWTag = 1;
+	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
+	{
+		.Signature          = CBWSIGNATURE,
+		.Tag                = ++CBWTag,
+		.TransferLength     = sizeof(msInquiryResponse_t),
+		.Flags              = CMDDIRDATAIN,
+		.LUN                = currentLUN,
+		.CommandLength      = 6,
+		.CommandData        = {CMDINQUIRY,0x00,0x00,0x00,sizeof(msInquiryResponse_t),0x00}
+	};
+ 	myMSCtransfers[xferIndex].CBW = &CommandBlockWrapper;
+	return msTransfer(&myMSCtransfers[xferIndex], &msDriveInfo[drv].inquiry);
 }
 
-// Get drive information and parameters 
-msInquiryResponse_t *getDriveInquiry(void) {
-	msDrive1.msDeviceInquiry(&msInquiry);
-	return &msInquiry;
+//---------------------------------------------------------------------------
+// Report LUNs.
+uint8_t mscReportLUNs(uint8_t *Buffer)
+{
+	if(CBWTag == 0xFFFFFFFF)
+		CBWTag = 1;
+	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
+	{
+		.Signature          = CBWSIGNATURE,
+		.Tag                = ++CBWTag,
+		.TransferLength     = MAXLUNS,
+		.Flags              = CMDDIRDATAIN,
+		.LUN                = currentLUN,
+		.CommandLength      = 12,
+		.CommandData        = {CMDREPORTLUNS, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, MAXLUNS, 0x00, 0x00}
+	};
+ 	myMSCtransfers[xferIndex].CBW = &CommandBlockWrapper;
+	return msTransfer(&myMSCtransfers[xferIndex], Buffer);
 }
 
-// Proccess Possible SCSI errors
+//---------------------------------------------------------------------------
+// Start/Stop unit.
+uint8_t msStartStopUnit(uint8_t mode) {
+	if(CBWTag == 0xFFFFFFFF)
+		CBWTag = 1;
+	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
+	{
+		.Signature          = CBWSIGNATURE,
+		.Tag                = ++CBWTag,
+		.TransferLength     = 0,
+		.Flags              = CMDDIRDATAIN,
+		.LUN                = currentLUN,
+		.CommandLength      = 6,
+		.CommandData        = {CMDSTARTSTOPUNIT, 0x01, 0x00, 0x00, mode, 0x00}
+	};
+ 	myMSCtransfers[xferIndex].CBW = &CommandBlockWrapper;
+	return msTransfer(&myMSCtransfers[xferIndex], NULL);
+}
+
+
+//---------------------------------------------------------------------------
+// Test Unit Ready.
+uint8_t msTestReady(uint8_t drv) {
+	if(CBWTag == 0xFFFFFFFF)
+		CBWTag = 1;
+	msCommandBlockWrapper_t CommandBlockWrapper = (msCommandBlockWrapper_t)
+	{
+		.Signature          = CBWSIGNATURE,
+		.Tag                = ++CBWTag,
+		.TransferLength     = 0,
+		.Flags              = CMDDIRDATAIN,
+		.LUN                = currentLUN,
+		.CommandLength      = 6,
+		.CommandData        = {CMDTESTUNITREADY, 0x00, 0x00, 0x00, 0x00, 0x00}
+	};
+ 	myMSCtransfers[xferIndex].CBW = &CommandBlockWrapper;
+	return msTransfer(&myMSCtransfers[xferIndex], NULL);
+}
+
+// Proccess Possible SCSI errors.
 uint8_t msProcessError(uint8_t msStatus) {
 	uint8_t msResult = 0;
 	
@@ -204,7 +497,7 @@ uint8_t msProcessError(uint8_t msStatus) {
 			return MS_CSW_SIG_ERROR;
 			break;
 		case MS_CBW_FAIL:
-			msResult = getDriveSense(&msSense);
+			msResult = mscDriveSense(&msSense);
 			if(msResult) return msResult;
 			switch(msSense.SenseKey) {
 				case MSUNITATTENTION:

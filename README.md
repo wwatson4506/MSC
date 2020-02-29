@@ -9,7 +9,7 @@ This version is almost a complete rewrite of MSC (MSC2 Branch) and is still WIP.
 - Teensyduino version 1.47 Beta 2 or better from PJRC.
 - You will need my forked version of WXMZ's uSDFS. Modifications
   were made for handling multiple Mass Storage devices.
-- There are now some example programs in the examples folder of MSC.
+- There are now some example programs in the examples folder of MSC2.
 
 Teensyduino found here: https://www.pjrc.com/teensy/td_download.html
 
@@ -23,9 +23,9 @@ PJRC forum thread for MSC: https://forum.pjrc.com/threads/55821-USBHost_t36-USB-
 
 To use my MSC2 example sketches there is a define that needs to be set in the MassStorage.h file.
 
-Uncomment 'Define USE_EXTENAL_INIT' to Initialize MSC Externally.
+Uncomment 'Define USE_EXTENAL_INIT' to Initialize MSC2 Externally.
 
-If defined, MSC uses the following in the *.ino sketches:
+If defined, MSC2 uses the following in the *.ino sketches:
 - USBHost myusb;
 - USBHub hub1(myusb);
 - USBHub hub2(myusb);

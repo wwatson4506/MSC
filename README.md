@@ -28,4 +28,3 @@ If defined, MSC needs the following setup in the ino sketch:
 - USBHub hub4(myusb);
 - myusb.begin();
 - mscInit();
-*/

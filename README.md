@@ -44,4 +44,4 @@ The example sketch 'test_RawWrite.ino' tests the read and write speeds of USB dr
 
 Again this work in progress and is still in development.
 
-
+TODO: Finish buffering MSC2 reads and writes. MSC2 is initially setup to do it. WIP.

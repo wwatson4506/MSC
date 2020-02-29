@@ -20,6 +20,13 @@
 							 }; /* Volume - Partition resolution table */
 #endif
 // end of early definition
+
+USBHost myusb;
+USBHub hub1(myusb);
+USBHub hub2(myusb);
+USBHub hub3(myusb);
+USBHub hub4(myusb);
+
 msDriveInfo_t *driveInfo;
 
 #define TEST_DRV 2
@@ -113,6 +120,9 @@ void setup()
   digitalWriteFast(13,HIGH);
   delay(500);
   while(!Serial);
+  
+  myusb.begin();
+  mscInit();
 
 #if WR_RD == 1
   Serial.println("Test logger_RawWriteRead>Write");

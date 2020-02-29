@@ -90,10 +90,6 @@ typedef class msController *Device_p;
 Define  USE_EXTERNAL_INIT to Initialize MSC Externally.
 If defined, MSC needs the following setup in the ino sketch:
  	USBHost myusb;
-	USBHub hub1(myusb);
-	USBHub hub2(myusb);
-	USBHub hub3(myusb);
-	USBHub hub4(myusb);
 	myusb.begin();
     mscInit();
 */

@@ -11,10 +11,9 @@ This version is almost a complete rewrite of MSC and is still WIP.
   were made for handling multiple Mass Storage devices.
 - There are now some example programs in the examples folder.
 
-Teensyduino found here:
-https://www.pjrc.com/teensy/td_download.html
-uSDFS found here:
-https://github.com/wwatson4506/MSC/tree/MSC2
+Teensyduino found here: https://www.pjrc.com/teensy/td_download.html
+
+uSDFS found here: https://github.com/wwatson4506/MSC/tree/MSC2
 
 PJRC forum thread for MSC: https://forum.pjrc.com/threads/55821-USBHost_t36-USB-Mass-Storage-Driver-Experiments
 

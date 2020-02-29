@@ -121,9 +121,6 @@ void setup()
   delay(500);
   while(!Serial);
   
-  myusb.begin();
-  mscInit();
-
 #if WR_RD == 1
   Serial.println("Test logger_RawWriteRead>Write");
 #else
@@ -132,6 +129,9 @@ void setup()
 
   Serial.print("uSDFS_VER:"); Serial.println(uSDFS_VER);
   Serial.printf("Looking for available USB drives\n");
+
+  myusb.begin();
+  mscInit();
 
   if((rc = f_mount (&fatfs, Dev, 1))) {
    die("Mount",rc);      /* Mount/Unmount a logical drive */

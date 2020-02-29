@@ -89,7 +89,7 @@ FRESULT fileCopy(const char *src, const char *dest) {
     f_close(&fdst);
 //	free(buffer);
 	finish = micros() - start;
-    float MegaBytes = (flSize*4.0f)/(1.0f*finish);
+    float MegaBytes = (flSize*1.0f)/(1.0f*finish);
 	Serial.printf("Copied %u bytes in %lu us. Speed: %f MB/s\n",flSize,finish,MegaBytes);
 	return fr;
 }

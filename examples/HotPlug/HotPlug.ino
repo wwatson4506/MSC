@@ -104,7 +104,7 @@ void setup() {
 	Serial.printf("Waiting for drives to connect.\n\n");
 	Serial.printf("NOTE: If you are using a HDD drive with a USB to SATA adapter\n");
 	Serial.printf("      it can take a few seconds to connect on power up.\n");
-	Serial.printf("      Also, 'USE_EXTENAL_INIT' must be defined in\n");
+	Serial.printf("      Also, 'USE_EXTERNAL_INIT' must be defined in\n");
 	Serial.printf("      MassStorage.h for this sketch to compile.\n");
 	Serial.printf("Plug in at least two devices (If not already plugged in).\n\n"); 
 	

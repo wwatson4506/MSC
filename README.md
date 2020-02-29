@@ -1,17 +1,22 @@
-# MSC
+# MSC2
 Mass Storage Controller for Teensy T3.6 and T4.0
 
 This is a USB Mass Storage driver based on PJRC's USBHost_t36 library.
 
-It is still very much WIP.
-You will need Arduino version 1.89 and Teensyduino version 1.47 Beta 2 from PJRC.
-Currently there is no example programs within MSC itself. For examples of the use of MSC
-you need to use example programs found in WMXZ's uSDFS library which implements MSC.
+This version is almost a complete rewrite of MSC and is still WIP.
 
-Teensyduino 1.47Beta2 found here in post #2:
-https://forum.pjrc.com/threads/54711-Teensy-4-0-First-Beta-Test
+- You will need Arduino version 1.89 up to version 1.8.12.
+- Teensyduino version 1.47 Beta 2 or better from PJRC.
+- You will need my forked version of WXMZ's uSDFS. Modifications
+  were made for handling multiple Mass Storage devices.
+- There are now some example programs in the examples folder.
 
-WMXZ uSDFS found here: https://github.com/WMXZ-EU/uSDFS
+
+
+Teensyduino found here:
+https://www.pjrc.com/teensy/td_download.html
+uSDFS found here:
+https://github.com/wwatson4506/MSC/tree/MSC2
 
 PJRC forum thread for MSC: https://forum.pjrc.com/threads/55821-USBHost_t36-USB-Mass-Storage-Driver-Experiments
 

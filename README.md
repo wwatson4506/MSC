@@ -30,4 +30,14 @@ If defined, MSC needs the following setup in the *.ino sketch:
 - myusb.begin();
 - mscInit();
 
-You will need to comment the define when using uSDFS examples.
+You will need to comment the '//define USE_EXTENAL_INIT' when using uSDFS examples.
+
+The example sketch 'CopyFiles.ino' uses a file named 'A_00001.dat' which is created by the 'logger_rawWrite.ino' sketch in uSDFS. This file was used for testing the copy function between different devices.
+
+The example sketch 'HotPlug.ino' tests MSC2's hot plugging capabilities of multiple USB drives. It also demonstrates use of available drive information for attached drive.
+
+The example sketch 'test_RawWrite.ino' tests the read and write speeds of USB drives. Change the define in line 57 to '#define WR_RD 0' for read speeds and '#define WR_RD 1' for write speeds.
+
+Again this work in progress and is still in development.
+
+

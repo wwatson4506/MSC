@@ -21,11 +21,11 @@ PJRC forum thread for MSC: https://forum.pjrc.com/threads/55821-USBHost_t36-USB-
 To use my example sketches there is a define that needs to be set in the MassStorage.h file.
 Define  USE_EXTENAL_INIT to Initialize MSC Externally.
 If defined, MSC needs the following setup in the ino sketch:
- 	- USBHost myusb;
-	- USBHub hub1(myusb);
-	- USBHub hub2(myusb);
-	- USBHub hub3(myusb);
-	- USBHub hub4(myusb);
-	- myusb.begin();
-  - mscInit();
+- USBHost myusb;
+- USBHub hub1(myusb);
+- USBHub hub2(myusb);
+- USBHub hub3(myusb);
+- USBHub hub4(myusb);
+- myusb.begin();
+- mscInit();
 */

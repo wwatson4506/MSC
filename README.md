@@ -13,7 +13,7 @@ This version is almost a complete rewrite of MSC (MSC2 Branch) and is still WIP.
 
 Teensyduino found here: https://www.pjrc.com/teensy/td_download.html
 
-uSDFS found here: https://github.com/wwatson4506/MSC/tree/MSC2
+uSDFS found here: https://github.com/wwatson4506/uSDFS
 
 If you are cloning MSC instead of downloading the zip file you will need to switch to the MSC2 branch using:
 - git checkout MSC2

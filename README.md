@@ -9,7 +9,7 @@ This version is almost a complete rewrite of MSC (MSC2 Branch) and is still WIP.
 - Teensyduino version 1.47 Beta 2 or better from PJRC.
 - You will need my forked version of WXMZ's uSDFS. Modifications
   were made for handling multiple Mass Storage devices.
-- There are now some example programs in the examples folder of MSC2.
+- There are now some of my example programs in the examples folder of MSC2.
 
 Teensyduino found here: https://www.pjrc.com/teensy/td_download.html
 

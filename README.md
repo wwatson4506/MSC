@@ -12,7 +12,7 @@ is still WIP.
   were made for handling multiple Mass Storage devices.
 - There are now some of my example programs in the examples folder of MSC3.
 
-Teensyduino found here: https://www.pjrc.com/teensy/td_download.html
+Teensyduino found here: https://www.pjrc.com/teensy/td_download.html.      
 uSDFS found here: https://github.com/wwatson4506/uSDFS
 
 If you are cloning MSC instead of downloading the zip file you will need to switch to the MSC3 branch using:

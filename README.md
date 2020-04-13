@@ -10,7 +10,7 @@ It is still WIP.
 - Teensyduino version 1.47 Beta 2 or better from PJRC.
 - You will need my forked version of WXMZ's uSDFS. Modifications
   were made for handling multiple Mass Storage devices.
-- There are now some of my example programs in the examples folder of MSC3.
+- There are example programs in the examples folder of MSC3. (Listed Below).
 
 Teensyduino found here: https://www.pjrc.com/teensy/td_download.html.      
 uSDFS found here: https://github.com/wwatson4506/uSDFS.
@@ -52,4 +52,4 @@ The example sketch 'ListDirectory.ino' is an example of listing the directory in
 
 Again this work in progress and is still in development.
 
-TODO: Finish buffering MSC3 reads and writes. MSC3 is initially setup to do it. WIP.
+TODO: Finish buffering MSC3 reads and writes. WIP.

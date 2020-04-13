@@ -356,20 +356,22 @@ void lsdir(char *directory) {
 
 	// Get drive '0:/-3:/'
 	sprintf(path, "%s", directory);
-	strncpy(drv,directory,3);
-	drv[3] = 0;
-	// Check for connected USB drives and mounting
-	if((drv[0] != 0) && (drv[1] != ':')) {
-		if(drv[1] == ':') { // Is there a drive spec?
+	strncpy(drv,directory,3); // Copy drive spec into drv array for validating.
+	drv[3] = 0; // Terminate drive spec string.
+	// Check for a valid drive number 0-4.
+	if(((drv[0] == '0') || (drv[0] == '1')) || ((drv[0] == '2') || (drv[0] == '3'))) {
+		if(drv[1] == ':') { // Is there a valid drive spec?
 			drive = (uint8_t)(drv[0]-48); // Convert ascii character to a uint8_t number.
+			// Check for connected USB drives and mounting.
 			if(drive > 1 && !driveAvailable(drive)) { // Drive connected?
-				Serial.printf("drive %s not connected.\n",drv);
+				Serial.printf("drive %s not connected.\n",drv); // No drive.
 				return; // Nope, give up and return.
 			}
-		} else {
-			Serial.printf("Failed: Bad Drive Spec %s\n",drv); // Bad drive spec given.
-			return; // Go home.
 		}
+	}
+	if(drv[0] == ':') { // ':' must be prceeded by a drive number.
+		Serial.printf("Failed: Bad Drive Spec %s\n",drv); // Bad drive spec given.
+		return; // Go home.
 	}
 	// Get and show volume label and serial number.
 	getDriveLabels(drive);

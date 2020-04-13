@@ -1,15 +1,13 @@
 //Copyright 2020 by Warren Watson
 // Version 02-Feb-20
 //
-// use following lines for early definitions of multiple partition configuration in uSDFS.h
 #include "Arduino.h"
 #include "uSDFS.h"
 #include "MassStorage.h"
 #include "msc.h"
 #include "mscfs.h"
 
-// For this sketch we need to define USE_EXTENAL_INIT in
-// MassStorage.h. Explained there.
+// use following lines for early definitions of multiple partition configuration in uSDFS.h
 
 #define MY_VOL_TO_PART
 #if FF_MULTI_PARTITION		/* Multiple partition configuration */ 
@@ -25,6 +23,8 @@
 #endif
 // end of early definition
 
+// For this sketch we need to define USE_EXTENAL_INIT in
+// MassStorage.h. Explained there.
 USBHost myusb;
 USBHub hub1(myusb);
 USBHub hub2(myusb);

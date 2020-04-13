@@ -3,8 +3,8 @@ Mass Storage Controller for Teensy T3.6 and T4.0
 
 This is a USB Mass Storage driver based on PJRC's USBHost_t36 library.
 
-This version is almost a complete rewrite of MSC (MSC2 Branch) and (MSC3 branch)
-is still WIP.
+This version is almost a complete rewrite of MSC (MSC2 Branch) and (MSC3 branch).
+It is still WIP.
 
 - You will need Arduino version 1.89 up to version 1.8.12.
 - Teensyduino version 1.47 Beta 2 or better from PJRC.

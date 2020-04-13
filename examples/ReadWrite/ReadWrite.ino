@@ -1,13 +1,11 @@
-//Copyright 2019 by Walter Zimmer
-// Version 08-jun-19
+//Copyright 2020 by Warren Watson
+// Version 12-apr-20
 //
-// use following lines for early definitions of multiple partition configuration in uSDFS.h
 #include "Arduino.h"
 #include "mscfs.h"
 #include "MassStorage.h"
 #include "msc.h"
 
-//#include "osal.h"
 #define MY_VOL_TO_PART
 #if FF_MULTI_PARTITION		/* Multiple partition configuration */ 
 	PARTITION VolToPart[] = {{DEV_SPI, 0}, //{ physical drive number, Partition: 0:Auto detect, 1-4:Forced partition)} 

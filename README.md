@@ -37,6 +37,7 @@ You will need to comment out 'define USE_EXTENAL_INIT' when using uSDFS examples
 A new file has been added, 'mscfs.cpp'. It supplys some higher level functions needed by the new example sketches.
 This version of MSC trys to initialize and auto mount the USB device when the 'driveAvailable()' function is called.
 The 'uNmountDrive()' function should be called before unplugging a USB drive to avoid data loss and/or file system corruption.
+
 MSC3 uses 2 ways to identify USB mass storage devices. A drive number for identfying devices and drive designation like '1:/' or '2:/'. Two functions are available for converting between the two types.
 - int getDriveIndex(const char * drive) Gets a drive number from a drive name string '1:/' --> 1.
 - const char *getDriveName(uint8_t drive) Gets a drive name string from a drive number 2 --> '2:/'.

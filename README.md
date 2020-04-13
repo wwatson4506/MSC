@@ -41,6 +41,7 @@ The 'uNmountDrive()' function should be called before unplugging a USB drive to 
 MSC3 uses 2 ways to identify USB mass storage devices. A drive number for identfying devices and drive designation like '1:/' or '2:/'. Two functions are available for converting between the two types.
 - int getDriveIndex(const char * drive) Gets a drive number from a drive name string '1:/' --> 1.
 - const char *getDriveName(uint8_t drive) Gets a drive name string from a drive number 2 --> '2:/'.
+
 There is another function that is needed to convert USB drive numbers to low level USB device numbers.
 - int8_t mapUSBDrive(uint8_t drive) 2 --> 0, 3 --> 1. MassStorage.cpp needs these.
 

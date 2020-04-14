@@ -348,7 +348,7 @@ void lsdir(char *directory) {
 	uint8_t drive = 2;  // Default drive number if no drive spec is given.
 	TCHAR path[256];
 	TCHAR pattern[256];
-    	char *fn;   		// This function is assuming non-Unicode cfg.
+	char *fn;   		// This function is assuming non-Unicode cfg.
 	TCHAR drv[4];
 	path[0] = 0;
 	pattern[0] = 0;

@@ -285,7 +285,7 @@ FRESULT  scan_files (char  *path)
 	}
 	// Now, reopen the directory and display all the files in order.
 	res = f_opendir(&dir, path); /* Open the directory */
-    if (res == FR_OK) {
+    	if (res == FR_OK) {
         for (;;) {
             res = f_readdir(&dir, &fno); // Read a directory item
             if ((res != FR_OK) || (fno.fname[0] == 0))
@@ -348,7 +348,7 @@ void lsdir(char *directory) {
 	uint8_t drive = 2;  // Default drive number if no drive spec is given.
 	TCHAR path[256];
 	TCHAR pattern[256];
-    char *fn;   		// This function is assuming non-Unicode cfg.
+    	char *fn;   		// This function is assuming non-Unicode cfg.
 	TCHAR drv[4];
 	path[0] = 0;
 	pattern[0] = 0;

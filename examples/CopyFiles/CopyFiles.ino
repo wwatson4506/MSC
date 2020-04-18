@@ -83,7 +83,7 @@ void loop() {
 
 	while(!Serial.available());
 	c = Serial.read();
-	if(Serial.available()) Serial.read(); // Get rid of CR and/or LF if there.
+	while(Serial.available()) Serial.read(); // Get rid of CR and/or LF if there.
 
 	switch(c) {
 		case '1':

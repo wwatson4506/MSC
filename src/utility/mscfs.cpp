@@ -138,7 +138,7 @@ int showUSBDriveInfo(uint8_t drive) {
 // If not mounted and it is available then attempt to mount the drive.
 bool driveAvailable(uint8_t drive) {
 	fstemp = assignVolume(drive); // Get the right FATFS work area pointer.
-	if(drive > 1) {
+	if(drive < 2) {
 		if(!checkDeviceConnected(mapUSBDrive(drive))) { // If it has been unplugged
 			if(fstemp->fs_type != 0) // Is it still mounted?
 				uNmountDrive(driveName[drive]); // Yes, unmount the drive.

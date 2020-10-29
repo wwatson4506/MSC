@@ -9,4 +9,9 @@ Some improvements have been made. It still retains the blocking mode of MSC. It 
 The newer version of uSDFS will have to be used. This will be the next thing I have to update.
 
 To really see what is happening in the backgroud with this non-blocking version I have set up two pins on the T4.1 to run a red
-and green LED. 
+and green LED. Using MSC-non-blocking.ino will give you several options to test with.
+
+*********** BIG WARNING ************: Because MSC-non-blocking.ino is using direct sector reads and writes any OS formatting to the
+USB mass storage device will be overwritten with a write to the device requiring it to be refomatted. The start sector of the reads and writes are set high but still can destroy formatting. Use on USB drives with no volatile data!!!!
+
+

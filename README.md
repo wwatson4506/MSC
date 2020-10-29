@@ -4,7 +4,7 @@ This the latest and possibly last version of MSC that I am submitting. It should
 also has the ability to do USB disk transfers in a non-blocking mode. Using the non-blocking mode is probably only usefull with a
 an RTOS or modified version of FatFS or SDFat. I tried modifying FatFS but that failed due to the fact that it had to wait for the
 transfers to complete before processing. There will have to be a mechanisim to signal completion of data to or from the USB drive.
-I guess file locking and semiphores.
+I guess file locking and semaphores.
 Some improvements have been made. It still retains the blocking mode of MSC. It remains compatible with my updated version of uSDFS.
 The newer version of uSDFS will have to be used. This will be the next thing I have to update.
 

@@ -1,0 +1,17 @@
+{
+	"name": "MSC-non-blocking",
+	"frameworks": "Arduino",
+	"platforms": "Teensy 3.5/6 - 4.0/1",
+	"keywords": "FileSystem, exFAT, FAT32, MBR, GPT",
+	"description": "wwatson Library", 
+	"version": "1.0.0",
+	"authors":
+	{	"name": "Warren Watson",
+		"maintainer": true
+	},
+	"repository":
+	{	"type": "git",
+		"url": "https://github.com/wwatson/MSC-non-blocking.git"
+	},
+    "examples": "examples/*/*.ino"
+}

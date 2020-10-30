@@ -17,10 +17,10 @@ USB mass storage device will be overwritten with a write to the device requiring
 
 Key things you can play with to get various results.
 1) MassStorage.h in this section:
-  // Define queue sizes
+  "// Define queue sizes
   #define MAX_TRANSFERS		1024	// read/write queue sizes (must be powers of 2!!)
   As the queue sizes get Smaller and depending on the size of the read or write buffer the bigger the chance of MSC going
-  into  blocking. If the queues are full it will block until space is avilable in the queues. This can be a memory eater:)
+  into  blocking. If the queues are full it will block until space is avilable in the queues. This can be a memory eater:)"
   
   // Setup debugging LED pin defs.
   // Used mainly to see  the activity of non-blocking reads and writes.

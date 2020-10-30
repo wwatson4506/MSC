@@ -30,7 +30,7 @@ Key things you can play with to get various results.
   // UnComment to watch read/write queue activity.
   //#define DBGqueue 1
 
-  //Define  USE_EXTERNAL_INIT to Initialize MSC Externally.
+  //Define  USE_EXTERNAL_INIT to Initialize MSC Externally when not using uSDFS.
   //If defined, MSC needs the following setup in the ino sketch:
   // 	USBHost myusb;
   //	myusb.begin();

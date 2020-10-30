@@ -17,6 +17,7 @@ Pin defines are in the MassStorage.h file so change to suit. I do not have the b
 USB mass storage device will be overwritten with a write to the device requiring it to be refomatted. The start sector address of the reads and writes are set high but still can destroy formatting. Use on USB drives with no volatile data!!!!
 
 Key things you can play with to get various results.
+
 1) MassStorage.h in this section:
    // Define queue sizes
    #define MAX_TRANSFERS		1024	// read/write queue sizes (must be powers of 2!!)

@@ -6,7 +6,7 @@ an RTOS or modified version of FatFS or SDFat. I tried modifying FatFS but that 
 transfers to complete before processing. There will have to be a mechanisim to signal completion of data to or from the USB drive.
 I guess file locking and semaphores.
 Some improvements have been made. It still retains the blocking mode of MSC. It remains compatible with my updated version of uSDFS.
-The newer version of uSDFS will have to be used. This will be the next thing I have to update.
+My newer version of uSDFS will have to be used. 
 
 To really see what is happening in the background with this non-blocking version I have set up two pins on the T4.1 to run a red
 and green LED. Red for writes and green for reads. Using MSC-non-blocking.ino will give you several options to test with.
@@ -20,7 +20,7 @@ Key things you can play with to get various results.
   // Define queue sizes
   #define MAX_TRANSFERS		1024	// read/write queue sizes (must be powers of 2!!)
   As the queue sizes get Smaller and depending on the size of the read or write buffer the bigger the chance of MSC going
-  into  blocking. If the queues are full it will block until space is avilable in the queues.
+  into  blocking. If the queues are full it will block until space is avilable in the queues. This can be a memory eater:)
   
   // Setup debugging LED pin defs.
   // Used mainly to see  the activity of non-blocking reads and writes.
@@ -33,7 +33,7 @@ Key things you can play with to get various results.
   //#define DBGqueue 1
 
   //Define  USE_EXTERNAL_INIT to Initialize MSC Externally when not using uSDFS.
-  //If defined, MSC needs the following setup in the ino sketch:
+  //If defined, MSC needs the following in the setup section of the ino sketch:
   // 	USBHost myusb;
   //	myusb.begin();
   //  mscHost.mscHostInit();
@@ -42,8 +42,9 @@ Key things you can play with to get various results.
 2) MSC-non-blocking.ino:
   #define FILLCHAR 0xff // Change this to write a different value to sectors.
 
-  // Uncomment "#define BLOCKING" to wait for the complete transfer to complete and
-  // the time it took. Reads and writes will block until transfer is complete.
+  // Uncomment "#define BLOCKING" to wait for the transfer to complete (blocking) and
+  // the time it took. Reads and writes will block until transfer is complete. Will return
+  // to loop() when complete.
   //#define BLOCKING
   
   This will read and write sectors in blocking mode and display read and write times.

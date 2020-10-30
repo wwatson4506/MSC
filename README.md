@@ -19,6 +19,7 @@ USB mass storage device will be overwritten with a write to the device requiring
 Key things you can play with to get various results.
 
 1) MassStorage.h in this section:
+
    // Define queue sizes
    #define MAX_TRANSFERS		1024	// read/write queue sizes (must be powers of 2!!)
    As the queue sizes get Smaller and depending on the size of the read or write buffer the bigger the chance of MSC going
@@ -42,6 +43,7 @@ Key things you can play with to get various results.
   //#define USE_EXTERNAL_INIT
 
 2) MSC-non-blocking.ino:
+   
    #define FILLCHAR 0xff // Change this to write a different value to sectors.
    Also used for verifying multi sector writes.
    

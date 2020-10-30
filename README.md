@@ -24,6 +24,19 @@ Key things you can play with to get various results.
   // Used mainly to see  the activity of non-blocking reads and writes.
   #define WRITE_PIN			33		// Pin number of drive read activity led (RED LED).
   #define READ_PIN			34		// Pin number of drive read activity led (GREEN LED).
+  
+  // UnComment the following define for verbose debug output.
+  //#define DBGprint 1
+  // UnComment to watch read/write queue activity.
+  //#define DBGqueue 1
+
+  //Define  USE_EXTERNAL_INIT to Initialize MSC Externally.
+  //If defined, MSC needs the following setup in the ino sketch:
+  // 	USBHost myusb;
+  //	myusb.begin();
+  //  mscHost.mscHostInit();
+  //#define USE_EXTERNAL_INIT
+
 2) :
   
 

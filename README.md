@@ -40,12 +40,21 @@ Key things you can play with to get various results.
   //#define USE_EXTERNAL_INIT
 
 2) MSC-non-blocking.ino:
-  #define FILLCHAR 0xff // Change this to write a different value to sectors.
-
-  // Uncomment "#define BLOCKING" to wait for the transfer to complete (blocking) and
-  // the time it took. Reads and writes will block until transfer is complete. Will return
-  // to loop() when complete.
-  //#define BLOCKING
+   #define FILLCHAR 0xff // Change this to write a different value to sectors.
+   Also used for verifying multi sector writes.
+   
+   // Uncomment "#define BLOCKING" to wait for the transfer to complete (blocking) and
+   // the time it took. Reads and writes will block until transfer is complete. Will return
+   // to loop() when complete.
+   //#define BLOCKING
   
   This will read and write sectors in blocking mode and display read and write times.
+  Setting MSC to non-blocking mode will show how long it takes to queue reads or writes.
+  
+  MSC in non-blocking mode is using tonton81's CircularBuffer and luni64's attachYieldFunc libraries.
+  As such, using attachYieldFunc requires any while statements to include the yield() function to keep it
+  from blocking.
+  
+  THIS IS JUST PROOf OF CoNCEPT:)
+  
   

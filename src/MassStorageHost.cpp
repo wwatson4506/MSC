@@ -32,7 +32,7 @@
 #include "MassStorage.h"
 #include "attachYieldFunc.h"
 
-// Setup two Circular_Buffers (read/write).
+// Setup two Circular_Buffers (read/write) Thanks Tonton81.
 Circular_Buffer<uint8_t, (uint16_t)MAX_TRANSFERS,sizeof(MSC_transfer_t)> mscRead ;
 Circular_Buffer<uint8_t, (uint16_t)MAX_TRANSFERS,sizeof(MSC_transfer_t)> mscWrite;
 

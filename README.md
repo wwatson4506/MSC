@@ -61,6 +61,6 @@ Key things you can play with to get various results.
   As such, using attachYieldFunc requires any while statements to include the yield() function to keep it
   from blocking.
   
-  THIS IS JUST PROOf OF CoNCEPT:)
+  THIS IS JUST PROOf OF CONCEPT:)
   
   

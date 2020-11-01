@@ -32,6 +32,7 @@ Setup debugging LED pin defs.
 Used mainly to see  the activity of non-blocking reads and writes.
 
 #define WRITE_PIN  33 // Pin number of drive read activity led (RED LED).
+
 #define READ_PIN   34 // Pin number of drive read activity led (GREEN LED).
 
 UnComment the following define for verbose debug output.

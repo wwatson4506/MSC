@@ -31,10 +31,8 @@ into  blocking. If the queues are full it will block until space is avilable in 
 Setup debugging LED pin defs.
 Used mainly to see  the activity of non-blocking reads and writes.
 
-"#define WRITE_PIN  33" Pin number of drive read activity led (RED LED).
-
-"#define READ_PIN   34" Pin number of drive read activity led (GREEN LED).
-  
+#define WRITE_PIN  33 // Pin number of drive read activity led (RED LED).
+#define READ_PIN   34 // Pin number of drive read activity led (GREEN LED).
 
 UnComment the following define for verbose debug output.
 //#define DBGprint 1
@@ -53,6 +51,7 @@ mscHost.mscHostInit();
 2) MSC-non-blocking.ino:
 
 #define FILLCHAR 0xff
+
 Change this to write a different value to sectors.
 Also used for verifying multi sector writes.
    

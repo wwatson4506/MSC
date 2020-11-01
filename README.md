@@ -66,7 +66,8 @@ This will read and write sectors in blocking mode and display read and write tim
   
 MSC in non-blocking mode is using tonton81's CircularBuffer and luni64's attachYieldFunc libraries. As such, using attachYieldFunc requires any while statements to include the yield() function to keep it from blocking.
 I have tried to comment the source code heavily to explain what is going on.
-  
-  THIS IS JUST PROOf OF CONCEPT:)
-  
-  
+
+THIS IS JUST PROOf OF CONCEPT:)
+
+There are probably better way's to do this. Still learning.
+

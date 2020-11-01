@@ -26,7 +26,7 @@ Define queue sizes
 
 read/write queue sizes (must be powers of 2!!)
 As the queue sizes get Smaller and depending on the size of the read or write buffer the bigger the chance of MSC going
-into  blocking. If the queues are full it will block until space is avilable in the queues. This can be a memory eater:)
+into  blocking. If the queues are full it will block until space is available in the queues. This can be a memory eater:)
   
 Setup debugging LED pin defs.
 Used mainly to see  the activity of non-blocking reads and writes.
@@ -58,7 +58,7 @@ mscHost.mscHostInit();
 Change this to write a different value to sectors.
 Also used for verifying multi sector writes.
    
-Uncomment "#define BLOCKING" to wait for the transfer to complete (blocking) and the time it took. Reads and writes will block until transfer is complete. Will return to loop() when complete.
+UnComment "#define BLOCKING" to wait for the transfer to complete (blocking) and the time it took. Reads and writes will block until transfer is complete. Will return to loop() when complete.
 
 //#define BLOCKING
   
@@ -67,7 +67,7 @@ This will read and write sectors in blocking mode and display read and write tim
 MSC in non-blocking mode is using tonton81's CircularBuffer and luni64's attachYieldFunc libraries. As such, using attachYieldFunc requires any while statements to include the yield() function to keep it from blocking.
 I have tried to comment the source code heavily to explain what is going on.
 
-THIS IS JUST PROOf OF CONCEPT:)
+THIS IS JUST PROOF OF CONCEPT:)
 
 There are probably better way's to do this. Still learning.
 

@@ -7,7 +7,7 @@ an RTOS or modified version of FatFS or SDFat. I tried modifying FatFS but that 
 transfers to complete before processing. There will have to be a mechanisim to signal completion of data to or from the USB drive.
 I guess file locking and semaphores.
 Some improvements have been made. It still retains the blocking mode of MSC. It remains compatible with my updated version of uSDFS.
-My newer version of uSDFS will have to be used. 
+My newer version uSDFS-non-blocking will have to be used when using uSDFS examples. 
 
 To really see what is happening in the background with this non-blocking version I have set up two pins on the T4.1 to run a red
 and green LED. Red for writes and green for reads. Using MSC-non-blocking.ino will give you several options to test with.

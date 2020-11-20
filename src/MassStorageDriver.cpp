@@ -511,7 +511,7 @@ uint8_t msController::msWriteBlocks(
                                   const uint32_t BlockAddress,
                                   const uint16_t Blocks,
                                   const uint16_t BlockSize,
-								  void * sectorBuffer)
+				  const void * sectorBuffer)
 	{
 #ifdef DBGprint
 	Serial.printf("msWriteBlocks()\n");
@@ -533,7 +533,7 @@ uint8_t msController::msWriteBlocks(
 							  (uint8_t)(BlockAddress & 0xFF),
 							  0x00, BlockHi, BlockLo, 0x00}
 	};
-	return msDoCommand(&CommandBlockWrapper, sectorBuffer);
+	return msDoCommand(&CommandBlockWrapper, (void *)sectorBuffer);
 }
 
 // Proccess Possible SCSI errors

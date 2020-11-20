@@ -63,7 +63,7 @@ public:
 	uint8_t msReadBlocks(const uint32_t BlockAddress, const uint16_t Blocks,
 						 const uint16_t BlockSize, void * sectorBuffer);
 	uint8_t msWriteBlocks(const uint32_t BlockAddress, const uint16_t Blocks,
-                        const uint16_t BlockSize,	void * sectorBuffer);
+                        const uint16_t BlockSize, const void * sectorBuffer);
 protected:
 	virtual bool claim(Device_t *device, int type, const uint8_t *descriptors, uint32_t len);
 	virtual void control(const Transfer_t *transfer);

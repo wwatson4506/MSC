@@ -7,7 +7,7 @@ This is a USB Mass Storage driver based on PJRC's USBHost_t36 library.
 THIS VERSION IS NOW OUTDATED!!
 
 The latest version is MSC-non-blocking. It is the most recent version. Unfortunatley it
-is not completely backwards compatible with the other three version. Itis compatible with
+is not completely backwards compatible with the other three version. It is compatible with
 the latest TeensyDuino 1.54 and Arduino 1.8.13.
 You will also need my version of WMXZ's uSDFS if using uSDFS located here:
 

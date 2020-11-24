@@ -10,11 +10,15 @@ The latest version is MSC-non-blocking. It is the most recent version. Unfortuna
 is not completely backwards compatible with the other three version. Itis compatible with
 the latest TeensyDuino 1.54 and Arduino 1.8.13.
 You will also need my version of WMXZ's uSDFS if using uSDFS located here:
+
 https://github.com/wwatson4506/uSDFS/tree/uSDFS-non-blocking.
 
-My modfied fork of the SdFat-beta and SD libraries are useable with MSC-non-blocking located here
+My modfied fork of the SdFat-beta and SD libraries are useable with MSC-non-blocking located here:
+
 https://github.com/wwatson4506/SdFat-beta.
-and here
+
+and here:
+
 https://github.com/wwatson4506/SD.
 
 These two libraries are forked from Paul Stoffregen's github site. (WIP).

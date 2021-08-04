@@ -7,7 +7,10 @@ This is a USB Mass Storage driver based on PJRC's USBHost_t36 library.
 THESE VERSIONS OF MSC ARE NOW OUTDATED!!
 The MSC driver is now included with Teensyduino 1.53 and above.
 Use the following links and examples for testing:
-https://github.com/wwatson4506/UsbMscFat or:
+
+https://github.com/wwatson4506/UsbMscFat
+
+or:
 
 https://github.com/wwatson4506/UsbMscFat/tree/UsbMscFat-FS_DATES
 
@@ -18,6 +21,7 @@ The UsbMscFat library is still WIP and is trying to follow FS and
 SD file abstraction with SdFat and MSC. But again things are changing
 as development goes on.
 Here is a link to UsbMscFat development:
+
 https://forum.pjrc.com/threads/66338-Many-TLAs-MTP-MSC-FS-SD-SDFat-LittleFS-UsbMSCFat-to-work-with-each-other-8
 *******************************************************************************************************************
 

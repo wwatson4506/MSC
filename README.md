@@ -16,7 +16,7 @@ https://github.com/wwatson4506/UsbMscFat/tree/UsbMscFat-FS_DATES
 
 The second link is a modified version of UsbMscFat that was
 modified By KurtE for using file date and time. Both KurtE and
-mjs513 have contributed very much time and effort to this library.
+mjs513 have contributed very much time and effort to these versions of the library.
 The UsbMscFat library is still WIP and is trying to follow FS and
 SD file abstraction with SdFat and MSC. But again things are changing
 as development goes on.
